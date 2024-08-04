@@ -1,0 +1,16 @@
+[submodule "Library/ImGUI"]
+	path = Library/ImGUI
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "Library/glfw"]
+	path = Library/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "Library/entt"]
+	path = Library/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "Library/imgui-node-editor"]
+	path = Library/imgui-node-editor
+	url = https://github.com/thedmd/imgui-node-editor
+[submodule "Library/yaml-cpp"]
+	path = Library/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
