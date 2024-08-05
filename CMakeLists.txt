@@ -16,5 +16,6 @@ add_subdirectory(Library)
 
 include_directories(Utils Components)
 add_executable(MUI ${src} ${header})
+# target_link_libraries(MUI PRIVATE ImGui ImNodeEditor glfw EnTT::EnTT yaml-cpp)
 
 

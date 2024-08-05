@@ -289,14 +289,12 @@ namespace YAML {
             node["CurveTessellationTol"] = rhs.CurveTessellationTol;
             node["CircleTessellationMaxError"] = rhs.CircleTessellationMaxError;
 
-            // 编码 Colors 数组
             Node colorsNode;
             for (int i = 0; i < ImGuiCol_COUNT; ++i) {
                 colorsNode[std::to_string(i)] = rhs.Colors[i];
             }
             node["Colors"] = colorsNode;
 
-            // 编码 Behaviors 相关属性
             node["HoverStationaryDelay"] = rhs.HoverStationaryDelay;
             node["HoverDelayShort"] = rhs.HoverDelayShort;
             node["HoverDelayNormal"] = rhs.HoverDelayNormal;
@@ -360,13 +358,11 @@ namespace YAML {
             rhs.CurveTessellationTol = node["CurveTessellationTol"].as<float>();
             rhs.CircleTessellationMaxError = node["CircleTessellationMaxError"].as<float>();
 
-            // 解码 Colors 数组
             const Node&colorsNode = node["Colors"];
             for (int i = 0; i < ImGuiCol_COUNT; ++i) {
                 rhs.Colors[i] = colorsNode[std::to_string(i)].as<ImVec4>();
             }
 
-            // 解码 Behaviors 相关属性
             rhs.HoverStationaryDelay = node["HoverStationaryDelay"].as<float>();
             rhs.HoverDelayShort = node["HoverDelayShort"].as<float>();
             rhs.HoverDelayNormal = node["HoverDelayNormal"].as<float>();
@@ -720,8 +716,8 @@ namespace YAML {
             node["label"] = rhs.label;
             node["type"] = static_cast<int>(rhs.type);
             node["components"] = rhs.components;
-            node["v_min"] = rhs.v_min; // Assuming float for simplicity
-            node["v_max"] = rhs.v_max; // Assuming float for simplicity
+            node["v_min"] = rhs.v_min;
+            node["v_max"] = rhs.v_max;
             node["format"] = rhs.format;
             node["flags"] = rhs.flags;
             return node;
@@ -983,11 +979,11 @@ namespace YAML {
         }
 
         static bool decode(const Node&node, Mio::UUid&rhs) {
-            if (node.size() != 4) return false; // UUID should have exactly 4 components
+            if (node.size() != 4) return false;
 
             std::array<uint32_t, 4> data;
             for (size_t i = 0; i < node.size(); ++i) {
-                data[i] = node[i].as<uint32_t>(); // Ensure correct type casting
+                data[i] = node[i].as<uint32_t>();
             }
             rhs.SetData(data);
             return true;

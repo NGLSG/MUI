@@ -545,6 +545,7 @@ namespace Mio {
         ed::Config config;
         config.SettingsFile = "Simple.json";
         m_Context = ed::CreateEditor(&config);
+        ed::SetCurrentEditor(m_Context);
     }
 
     void UI::Update() {
@@ -553,7 +554,8 @@ namespace Mio {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGuiIO&io = ImGui::GetIO(); {
+        ImGuiIO&io = ImGui::GetIO();
+        static int nextLinkId = 999; {
             for (auto&item: manifests) {
                 for (auto&ui: item->sManager) {
                     ui->Update();
@@ -616,26 +618,28 @@ namespace Mio {
     void UI::SetStyleDefault() {
         ImGuiStyle&style = ImGui::GetStyle();
         style.FrameRounding = 4.0f;
-        style.Colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.00f); // 黑色文本
-        style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f); // 浅灰色背景
-        style.Colors[ImGuiCol_Button] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f); // 按钮背景
-        style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f); // 悬停效果
-        style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.73f, 0.73f, 0.73f, 1.00f); // 按下效果
-        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.2f, 0.3f, 0.4f, 1.0f); // 非活动窗口标题背景颜色
-        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.25f, 0.35f, 0.45f, 1.0f); // 活动窗口标题背景颜色
-        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.3f, 0.4f, 0.5f, 1.0f); // 离开窗口标题背景颜色
-        style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.5f, 0.5f, 0.5f, 1.00f); // 滑块手柄
-        style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f); // 滑块手柄按下
-        style.Colors[ImGuiCol_FrameBg] = ImVec4(0.85f, 0.85f, 0.85f, 1.00f); // 输入框背景
-        style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f); // 输入框悬停
-        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.47f, 1.00f, 1.00f); // 复选框选中标记
+        style.Colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.00f); // Black text
+        style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f); // Light gray background
+        style.Colors[ImGuiCol_Button] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f); // Button background
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f); // Hover effect
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.73f, 0.73f, 0.73f, 1.00f); // Pressed effect
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.2f, 0.3f, 0.4f, 1.0f); // Inactive window title background color
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.25f, 0.35f, 0.45f, 1.0f);
+        // Active window title background color
+        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.3f, 0.4f, 0.5f, 1.0f);
+        // Collapsed window title background color
+        style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.5f, 0.5f, 0.5f, 1.00f); // Slider handle
+        style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f); // Pressed slider handle
+        style.Colors[ImGuiCol_FrameBg] = ImVec4(0.85f, 0.85f, 0.85f, 1.00f); // Input box background
+        style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f); // Input box hover
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.47f, 1.00f, 1.00f); // Checkbox checkmark
         style.ChildBorderSize = 0.0f;
         style.FrameBorderSize = 0.0f;
-        style.FrameBorderSize = 1.0f; // 边框大小
-        style.ItemSpacing = ImVec2(8, 4); // 项目间距
-        style.WindowBorderSize = 0.0f; // 窗口边框
-        style.WindowRounding = 4.0f; // 窗口圆角
-        style.WindowTitleAlign = ImVec2(0.5f, 0.5f); // 标题居中
+        style.FrameBorderSize = 1.0f; // Border size
+        style.ItemSpacing = ImVec2(8, 4); // Item spacing
+        style.WindowBorderSize = 0.0f; // Window border
+        style.WindowRounding = 4.0f; // Window rounding
+        style.WindowTitleAlign = ImVec2(0.5f, 0.5f); // Title centered
         Style::DefaultStyle = style;
     }
 }

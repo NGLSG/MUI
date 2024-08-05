@@ -26,6 +26,72 @@ namespace ed = ax::NodeEditor;
 namespace Mio {
     class GUIManifest;
 
+    struct Node {
+        enum class PinType {
+            Flow,
+            Bool,
+            Int,
+            Float,
+            String,
+            Object,
+            Function,
+            Delegate,
+        };
+
+        enum class PinKind {
+            Output,
+            Input
+        };
+
+        enum class NodeType {
+            Blueprint,
+            Simple,
+            Tree,
+            Comment,
+            Houdini
+        };
+
+        struct Pin {
+            ed::PinId ID;
+            Node* Node;
+            std::string Name;
+            PinType Type;
+            PinKind Kind;
+
+            Pin(int id, const char* name, PinType type): ID(id), Node(nullptr), Name(name), Type(type),
+                                                         Kind(PinKind::Input) {
+
+            }
+        };
+
+        ed::NodeId ID;
+        std::string Name;
+        std::vector<Pin> Inputs;
+        std::vector<Pin> Outputs;
+        ImColor Color;
+        NodeType Type;
+        ImVec2 Size;
+
+        std::string State;
+        std::string SavedState;
+
+        Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)): ID(id), Name(name), Color(color),
+            Type(NodeType::Blueprint), Size(0, 0) {
+
+        }
+    };
+
+    class NodeEditor : public UIManager {
+    public:
+        struct Data {
+        };
+
+    private:
+        ed::EditorContext* context;
+        std::set<ed::NodeId> selectedNodes;
+        ed::Config config;
+    };
+
     class Button : public UIBase {
     public:
         friend class YAML::convert<std::shared_ptr<UIBase>>;
@@ -647,6 +713,7 @@ namespace Mio {
         UI() = default;
 
         ~UI() = default;
+
     private:
         static void SetStyleDefault();
 

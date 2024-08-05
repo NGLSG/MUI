@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.28)
-set(name lib)
 
 find_package(OpenGL REQUIRED)
 add_subdirectory(glfw)
@@ -12,6 +11,7 @@ file(GLOB isrc
         ImGUI/backends/imgui_impl_opengl3.*
         ImGUI/backends/imgui_impl_opengl3_loader.h
 )
+
 add_library(ImGui STATIC ${isrc})
 target_link_libraries(ImGui PUBLIC glfw ${OPENGL_gl_LIBRARY})
 target_include_directories(ImGui PUBLIC ImGUI)
