@@ -7,7 +7,6 @@
 #include "ResourceManager.h"
 #include "Components/Event.h"
 #include "Application.h"
-#include <stdio.h>
 
 namespace Mio {
     class ResourceManager;
@@ -15,11 +14,11 @@ namespace Mio {
 
     class GUIManifest : public std::enable_shared_from_this<GUIManifest> {
     public:
-        std::string SavePath;
         std::string sName;
         std::string sVersion = "m1.0.0";
         std::vector<std::shared_ptr<UIManager>> sManager;
         UUid sUUID = UUid::New();
+        std::string SavePath;
 
         template<typename T>
         std::shared_ptr<T> GetUIByName(const std::string&name) {
@@ -33,12 +32,13 @@ namespace Mio {
 
         GUIManifest() = default;
 
-        GUIManifest(const std::string&name) {
+        GUIManifest(const std::string&name, const std::string&dir) {
             sName = name;
+            SavePath = dir + "/" + sName;
         }
 
-        static std::shared_ptr<GUIManifest> Create(const std::string&name) {
-            return std::make_shared<GUIManifest>(name);
+        static std::shared_ptr<GUIManifest> Create(const std::string&name, const std::string&dir) {
+            return std::make_shared<GUIManifest>(name, dir);
         }
     };
 } // Mio

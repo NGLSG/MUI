@@ -4,6 +4,7 @@ find_package(OpenGL REQUIRED)
 add_subdirectory(glfw)
 add_subdirectory(entt)
 add_subdirectory(yaml-cpp)
+add_subdirectory(RyoCompression)
 
 file(GLOB isrc
         ImGUI/*.cpp

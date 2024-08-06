@@ -638,7 +638,7 @@ namespace Mio {
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
         ImGuiIO&io = ImGui::GetIO();
-        SetFont(AddFont("assets/font/YaHei.ttf", 16));
+        SetFont(AddFont((ResourcePath / "assets/font/YaHei.ttf").string(), 16));
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
