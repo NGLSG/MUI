@@ -6,13 +6,16 @@
 
 #include "ResourceManager.h"
 #include "Components/Event.h"
-#include "UI.h"
+#include "Application.h"
+#include <stdio.h>
 
 namespace Mio {
     class ResourceManager;
+    struct Manifests;
 
     class GUIManifest : public std::enable_shared_from_this<GUIManifest> {
     public:
+        std::string SavePath;
         std::string sName;
         std::string sVersion = "m1.0.0";
         std::vector<std::shared_ptr<UIManager>> sManager;
@@ -124,6 +127,12 @@ namespace YAML {
                 case Mio::UIBase::Type::Window:
                     node = "Window";
                     break;
+                case Mio::UIBase::Type::Popup:
+                    node = "Popup";
+                    break;
+                case Mio::UIBase::Type::Group:
+                    node = "Group";
+                    break;
                 default:
                     node = "None";
                     break;
@@ -186,6 +195,12 @@ namespace YAML {
             }
             else if (sType == "Window") {
                 rhs = Mio::UIBase::Type::Window;
+            }
+            else if (sType == "Popup") {
+                rhs = Mio::UIBase::Type::Popup;
+            }
+            else if (sType == "Group") {
+                rhs = Mio::UIBase::Type::Group;
             }
             else {
                 rhs = Mio::UIBase::Type::None;
@@ -625,7 +640,7 @@ namespace YAML {
             rhs.label = node["label"].as<std::string>().c_str();
             std::string buf = node["buf"].as<std::string>();
             rhs.buf = new char[buf.size() + 1];
-            std::strcpy(rhs.buf, buf.c_str());
+            strcpy(rhs.buf, buf.c_str());
             rhs.buf_size = node["buf_size"].as<size_t>();
             rhs.hint = node["hint"].as<std::string>().c_str();
             rhs.Multiline = node["Multiline"].as<bool>();
@@ -892,6 +907,7 @@ namespace YAML {
             node["name"] = rhs.name;
             node["p_open"] = rhs.p_open;
             node["flags"] = rhs.flags;
+            node["fullScreen"] = rhs.fullScreen;
             return node;
         }
 
@@ -902,6 +918,7 @@ namespace YAML {
             rhs.name = node["name"].as<std::string>();
             rhs.p_open = node["p_open"].as<bool>();
             rhs.flags = node["flags"].as<ImGuiWindowFlags>();
+            rhs.fullScreen = node["fullScreen"].as<bool>();
             return true;
         }
     };
@@ -942,6 +959,42 @@ namespace YAML {
             }
             rhs.name = node["name"].as<std::string>();
             rhs.enabled = node["enabled"].as<bool>();
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mio::Group::Data> {
+        static Node encode(const Mio::Group::Data&rhs) {
+            Node node;
+            node["name"] = rhs.name;
+            return node;
+        }
+
+        static bool decode(const Node&node, Mio::Group::Data&rhs) {
+            if (!node.IsMap()) {
+                return false;
+            }
+            rhs.name = node["name"].as<std::string>();
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<Mio::Popup::Data> {
+        static Node encode(const Mio::Popup::Data&rhs) {
+            Node node;
+            node["name"] = rhs.name;
+            node["flags"] = rhs.flags;
+            return node;
+        }
+
+        static bool decode(const Node&node, Mio::Popup::Data&rhs) {
+            if (!node.IsMap()) {
+                return false;
+            }
+            rhs.name = node["name"].as<std::string>();
+            rhs.flags = node["flags"].as<ImGuiWindowFlags>();
             return true;
         }
     };
@@ -999,6 +1052,7 @@ namespace YAML {
             node["UID"] = rhs->UID();
             node["transform"] = rhs->transform;
             node["style"] = rhs->style.ChangeLog;
+            node["refVariables"] = rhs->RefVariables;
             switch (rhs->cType) {
                 case Mio::UIBase::Type::Button: {
                     node["data"] = std::reinterpret_pointer_cast<Mio::Button>(rhs)->cData;
@@ -1107,6 +1161,22 @@ namespace YAML {
                     }
                     break;
                 }
+                case Mio::UIBase::Type::Group: {
+                    auto group = std::reinterpret_pointer_cast<Mio::Group>(rhs);
+                    node["data"] = std::reinterpret_pointer_cast<Mio::Group>(rhs)->cData;
+                    for (auto&uiElement: group->uiElements) {
+                        node["uiElements"].push_back(encode(uiElement));
+                    }
+                    break;
+                }
+                case Mio::UIBase::Type::Popup: {
+                    auto popup = std::reinterpret_pointer_cast<Mio::Popup>(rhs);
+                    node["data"] = std::reinterpret_pointer_cast<Mio::Popup>(rhs)->cData;
+                    for (auto&uiElement: popup->uiElements) {
+                        node["uiElements"].push_back(encode(uiElement));
+                    }
+                    break;
+                }
                 case Mio::UIBase::Type::MenuItem: {
                     node["data"] = std::reinterpret_pointer_cast<Mio::MenuItem>(rhs)->cData;
                     node["funcs"] = std::reinterpret_pointer_cast<Mio::MenuItem>(rhs)->GetComponent<Mio::Event>().
@@ -1124,6 +1194,7 @@ namespace YAML {
                 return false;
             }
             const auto type = node["type"].as<Mio::UIBase::Type>();
+            rhs->cName = node["name"].as<std::string>();
             switch (type) {
                 case Mio::UIBase::Type::Button:
                     rhs = Mio::Button::Create(node["data"].as<Mio::Button::Data>());
@@ -1210,6 +1281,26 @@ namespace YAML {
                             std::dynamic_pointer_cast<Mio::MenuItem>(uiElement));
                     }
                     break;
+                case Mio::UIBase::Type::Group:
+                    rhs = Mio::Group::Create(node["data"].as<Mio::Group::Data>());
+                    for (const auto&element: node["uiElements"]) {
+                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
+                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
+                            return false;
+                        }
+                        std::dynamic_pointer_cast<Mio::Group>(rhs)->uiElements.push_back(uiElement);
+                    }
+                    break;
+                case Mio::UIBase::Type::Popup:
+                    rhs = Mio::Popup::Create(node["data"].as<Mio::Popup::Data>());
+                    for (const auto&element: node["uiElements"]) {
+                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
+                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
+                            return false;
+                        }
+                        std::dynamic_pointer_cast<Mio::Popup>(rhs)->uiElements.push_back(uiElement);
+                    }
+                    break;
                 case Mio::UIBase::Type::MenuItem:
                     rhs = Mio::MenuItem::Create(node["data"].as<Mio::MenuItem::Data>(), rhs->cName);
                     rhs->GetComponent<Mio::Event>().SetFuncs(node["events"].as<std::vector<std::string>>());
@@ -1218,9 +1309,12 @@ namespace YAML {
                     return false;
                     break;
             }
-            rhs->cType = type;
-            rhs->cName = node["name"].as<std::string>();
+
             rhs->uuid = node["UID"].as<Mio::UUid>();
+            if (node["RefVariables"].IsDefined() && !node["RefVariables"].IsNull()) {
+                rhs->RefVariables = node["RefVariables"].as<std::vector<std::string>>();
+            }
+
             rhs->GetComponent<Mio::Transform>().SetTransform(node["transform"].as<Mio::Transform>());
             if (node["style"].IsDefined() && !node["style"].IsNull()) {
                 rhs->GetComponent<Mio::Style>().Modify(node["style"].as<Mio::ChangeLogs>());
@@ -1325,6 +1419,26 @@ namespace YAML {
                             std::dynamic_pointer_cast<Mio::MenuItem>(uiElement));
                     }
                     break;
+                case Mio::UIBase::Type::Group:
+                    rhs = Mio::Group::Create(node["data"].as<Mio::Group::Data>());
+                    for (const auto&element: node["uiElements"]) {
+                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
+                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
+                            return false;
+                        }
+                        rhs->uiElements.push_back(uiElement);
+                    }
+                    break;
+                case Mio::UIBase::Type::Popup:
+                    rhs = Mio::Popup::Create(node["data"].as<Mio::Popup::Data>());
+                    for (const auto&element: node["uiElements"]) {
+                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
+                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
+                            return false;
+                        }
+                        rhs->uiElements.push_back(uiElement);
+                    }
+
                 default:
                     return false;
                     break;
@@ -1348,6 +1462,7 @@ namespace YAML {
             node["version"] = rhs.sVersion;
             node["Managers"] = rhs.sManager;
             node["uid"] = rhs.sUUID;
+            node["SavePath"] = rhs.SavePath;
             return node;
         }
 

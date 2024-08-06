@@ -25,4 +25,14 @@ namespace Mio {
         stbi_image_free(data);
         return texture_id;
     }
+
+    void* Utils::LoadTextureToRAM(const char* filename) {
+        int width, height, channels;
+        unsigned char* data = stbi_load(filename, &width, &height, &channels, 0);
+        if (!data) {
+            std::cerr << "Failed to load image: " << filename << std::endl;
+            return 0;
+        }
+        return data;
+    }
 }

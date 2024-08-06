@@ -1,5 +1,7 @@
 #include "Event.h"
 
+#include <iostream>
+
 namespace Mio {
     void Event::AddListener(std::string name) {
         funcs.push_back(name);
@@ -12,6 +14,10 @@ namespace Mio {
 
     void Mio::Event::BeginFrame() {
         for (const auto&name: funcs) {
+            if (!Events.contains(name)) {
+                std::cerr << "There is no implementation for event <" << name << "> in the event system" << std::endl;
+                continue;
+            }
             Events[name]();
         }
     }

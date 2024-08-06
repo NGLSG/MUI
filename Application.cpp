@@ -1,11 +1,6 @@
-#include "UI.h"
+#include "Application.h"
 
 #include <filesystem>
-#include <iomanip>
-#include <iostream>
-#include <random>
-#include <ranges>
-#include <sstream>
 #include <utility>
 
 #include <backends/imgui_impl_opengl3.h>
@@ -14,8 +9,77 @@
 #include "GUIManifest.h"
 #include "Components/Event.h"
 #include "Utils.h"
+#include "Variables.h"
 
 namespace Mio {
+    NodeEditor::NodeEditor(Data data): cData(std::move(data)) {
+        config.SettingsFile = cData.savePath.c_str();
+        context = ed::CreateEditor(&config);
+        ed::SetCurrentEditor(context);
+    }
+
+    void NodeEditor::Update() {
+        static int counter = 0;
+        ed::Begin(cData.name.c_str(), {-1, -1});
+        for (auto&node: nodes) {
+            node.Update();
+        }
+        if (ed::ShowBackgroundContextMenu()) {
+            ImGui::OpenPopup("NodeContextMenu");
+        }
+        if (ImGui::BeginPopup("NodeContextMenu")) {
+            for (auto&groupNode: Node::Nodes) {
+                ImGui::BeginGroup();
+                ImGui::Text(groupNode.first.c_str());
+                for (auto&node: groupNode.second) {
+                    if (ImGui::MenuItem(node.Name.c_str())) {
+                        nodes.emplace_back(node);
+                    }
+                }
+                ImGui::EndGroup();
+            }
+            ImGui::EndPopup();
+        }
+        if (ed::BeginCreate()) {
+            ed::PinId startPinId, endPinId;
+            if (ed::QueryNewLink(&startPinId, &endPinId)) {
+                if (startPinId && endPinId) {
+                    if (ed::AcceptNewItem()) {
+                        links.emplace_back(counter++, startPinId, endPinId);
+                    }
+                }
+            }
+        }
+        ed::EndCreate();
+
+        if (ed::BeginDelete()) {
+            ed::LinkId linkId;
+            if (ed::QueryDeletedLink(&linkId)) {
+                if (ed::AcceptDeletedItem()) {
+                    for (auto&link: links) {
+                        if (link.ID == linkId) {
+                            links.erase(std::remove_if(links.begin(), links.end(), [&](const Link&link) {
+                                return link.ID == linkId;
+                            }));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        ed::EndDelete();
+        for (auto&link: links) {
+            ed::Link(link.ID, link.StartPinID, link.StartPinID, {1, 1, 1, 1}, 2.0f);
+        }
+        ed::End();
+    }
+
+    void NodeEditor::Save(const std::string&path) {
+    }
+
+    void NodeEditor::Load(const std::string&path) {
+    }
+
     Button::Button(Data data, std::string name): cData(std::move(data)) {
         uuid = UUid::New();
         AddComponent<Event>();
@@ -63,12 +127,13 @@ namespace Mio {
         AddComponent<Event>();
         cType = Type::CheckBox;
         cName = std::move(name);
+        REGISTERVAR(cName.c_str(), cData.value, RefVariables);
     }
 
     void CheckBox::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            if (ImGui::Checkbox(cData.name.c_str(), cData.value)) {
+            if (ImGui::Checkbox(cData.name.c_str(), cData.value.get())) {
                 GetComponent<Event>().BeginFrame();
             }
             UIBase::EndFrame();
@@ -138,7 +203,7 @@ namespace Mio {
                     GetComponent<Event>().BeginFrame();
                 }
             }
-            if (cData.buf[0] == '\0' && cData.hint != NULL) {
+            if (cData.buf[0] == '\0' && cData.hint != "") {
                 ImGui::SameLine();
                 ImGui::TextDisabled("(%s)", cData.hint);
             }
@@ -170,6 +235,7 @@ namespace Mio {
         AddComponent<Event>();
         cType = Type::RadioButton;
         cName = std::move(name);
+        REGISTERVAR(cName.c_str(), cData.v, RefVariables);
     }
 
     void RadioButton::Modify(const Data&data) {
@@ -179,7 +245,7 @@ namespace Mio {
     void RadioButton::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            if (ImGui::RadioButton(cData.name.c_str(), cData.v, cData.v_button)) {
+            if (ImGui::RadioButton(cData.name.c_str(), cData.v.get(), cData.v_button)) {
                 GetComponent<Event>().BeginFrame();
             }
             UIBase::EndFrame();
@@ -219,6 +285,7 @@ namespace Mio {
         AddComponent<Event>();
         cType = UIBase::Type::Slider;
         cName = std::move(name);
+        REGISTERVAR(cName.c_str(), cData.v, RefVariables);
     }
 
     void Slider::Modify(const Data&data) {
@@ -231,13 +298,14 @@ namespace Mio {
             switch (cData.type) {
                 case Type::Float:
                     if (cData.components == 0) {
-                        if (ImGui::SliderScalar(cData.label, ImGuiDataType_Float, cData.v, &cData.v_min, &cData.v_max,
+                        if (ImGui::SliderScalar(cData.label, ImGuiDataType_Float, cData.v.get(), &cData.v_min,
+                                                &cData.v_max,
                                                 cData.format, cData.flags)) {
                             GetComponent<Event>().BeginFrame();
                         }
                     }
                     else {
-                        if (ImGui::SliderScalarN(cData.label, ImGuiDataType_Float, cData.v, cData.components,
+                        if (ImGui::SliderScalarN(cData.label, ImGuiDataType_Float, cData.v.get(), cData.components,
                                                  &cData.v_min,
                                                  &cData.v_max, cData.format, cData.flags)) {
                             GetComponent<Event>().BeginFrame();
@@ -246,13 +314,14 @@ namespace Mio {
                     break;
                 case Type::Int:
                     if (cData.components == 0) {
-                        if (ImGui::SliderScalar(cData.label, ImGuiDataType_S32, cData.v, &cData.v_min, &cData.v_max,
+                        if (ImGui::SliderScalar(cData.label, ImGuiDataType_S32, cData.v.get(), &cData.v_min,
+                                                &cData.v_max,
                                                 cData.format, cData.flags)) {
                             GetComponent<Event>().BeginFrame();
                         }
                     }
                     else {
-                        if (ImGui::SliderScalarN(cData.label, ImGuiDataType_S32, cData.v, cData.components,
+                        if (ImGui::SliderScalarN(cData.label, ImGuiDataType_S32, cData.v.get(), cData.components,
                                                  &cData.v_min,
                                                  &cData.v_max,
                                                  cData.format, cData.flags)) {
@@ -261,7 +330,7 @@ namespace Mio {
                     }
                     break;
                 case Type::Angle:
-                    if (ImGui::SliderAngle(cData.label, static_cast<float *>(cData.v),
+                    if (ImGui::SliderAngle(cData.label, static_cast<float *>(cData.v.get()),
                                            cData.v_min,
                                            cData.v_max, cData.format,
                                            cData.flags)) {
@@ -276,12 +345,13 @@ namespace Mio {
     }
 
     float Slider::GetValue() const {
-        return *static_cast<float *>(cData.v);
+        return *std::static_pointer_cast<float>(cData.v);
     }
 
     ColorPicker::ColorPicker(Data data, std::string name): cData(std::move(data)) {
         cType = Type::ColorPicker;
         cName = std::move(name);
+        REGISTERVAR(cName.c_str(), cData.v, RefVariables);
     }
 
     void ColorPicker::Modify(const Data&data) {
@@ -291,7 +361,7 @@ namespace Mio {
     void ColorPicker::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            if (ImGui::ColorPicker4(cData.name.c_str(), reinterpret_cast<float *>(cData.v), cData.flags,
+            if (ImGui::ColorPicker4(cData.name.c_str(), reinterpret_cast<float *>(cData.v.get()), cData.flags,
                                     reinterpret_cast<float *>(&cData.ref_col))) {
             }
             UIBase::EndFrame();
@@ -305,6 +375,7 @@ namespace Mio {
     ColorEditor::ColorEditor(Data data, std::string name): cData(std::move(data)) {
         cType = Type::ColorEditor;
         cName = std::move(name);
+        REGISTERVAR(cName.c_str(), cData.v, RefVariables);
     }
 
     void ColorEditor::Modify(const Data&data) {
@@ -314,7 +385,7 @@ namespace Mio {
     void ColorEditor::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            if (ImGui::ColorEdit4(cData.name.c_str(), reinterpret_cast<float *>(cData.v), cData.flags)) {
+            if (ImGui::ColorEdit4(cData.name.c_str(), reinterpret_cast<float *>(cData.v.get()), cData.flags)) {
             }
             UIBase::EndFrame();
         }
@@ -327,6 +398,7 @@ namespace Mio {
     ProgressBar::ProgressBar(Data data, std::string name): cData(std::move(data)) {
         cType = Type::ProgressBar;
         cName = std::move(name);
+        REGISTERVAR(cName.c_str(), cData.progress, RefVariables);
     }
 
     void ProgressBar::Modify(const Data&data) {
@@ -353,13 +425,47 @@ namespace Mio {
     void TreeNode::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            UIManager::BeginFrame();
             if (ImGui::TreeNodeEx(cData.name.c_str(), cData.flags)) {
                 BeginFrame();
                 ImGui::TreePop();
             }
             UIBase::EndFrame();
         }
+    }
+
+    Group::Group(Data data, std::string name): cData((std::move(data))) {
+        cName = std::move(name);
+        cType = Type::Group;
+    }
+
+    void Group::Modify(const Data&data) {
+        cData = data;
+    }
+
+    void Group::Update() {
+        UIBase::BeginFrame();
+        ImGui::BeginGroup();
+        BeginFrame();
+        ImGui::EndGroup();
+        UIBase::EndFrame();
+    }
+
+    Popup::Popup(Data data, std::string name): cData(std::move(data)) {
+        cType = Type::Popup;
+        cName = std::move(name);
+    }
+
+    void Popup::Modify(const Data&data) {
+        cData = data;
+    }
+
+    void Popup::Update() {
+        UIBase::BeginFrame();
+        if (ImGui::BeginPopup(cData.name.c_str(), cData.flags)) {
+            BeginFrame();
+            ImGui::EndPopup();
+        }
+        UIBase::EndFrame();
     }
 
     Tooltip::Tooltip(Data data, std::string name): cData(std::move(data)) {
@@ -374,7 +480,6 @@ namespace Mio {
     void Tooltip::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            UIManager::BeginFrame();
             if (ImGui::IsItemHovered()) {
                 ImGui::BeginTooltip();
                 BeginFrame();
@@ -423,7 +528,7 @@ namespace Mio {
     void SubWindow::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            UIManager::BeginFrame();
+
             ImGui::BeginChild(cData.name.c_str(), cData.size, cData.child_flags, cData.window_flags);
             BeginFrame();
             ImGui::EndChild();
@@ -443,7 +548,10 @@ namespace Mio {
     void Window::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            UIManager::BeginFrame();
+            if (cData.fullScreen) {
+                ImGui::SetNextWindowPos(ImVec2(0, 0));
+                ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y));
+            }
             if (ImGui::Begin(cData.name.c_str(), &cData.p_open, cData.flags)) {
                 BeginFrame();
             }
@@ -451,7 +559,6 @@ namespace Mio {
             UIBase::EndFrame();
         }
     }
-
 
     MenuItem::MenuItem(Data data, std::string name): cData(std::move(data)) {
         AddComponent<Event>();
@@ -483,7 +590,6 @@ namespace Mio {
     void MenuBar::Update() {
         if (Active) {
             UIBase::BeginFrame();
-            UIManager::BeginFrame();
             if (ImGui::BeginMenuBar()) {
                 if (ImGui::BeginMenu(cData.name.c_str())) {
                     for (auto&item: menuItems) {
@@ -507,7 +613,7 @@ namespace Mio {
         });
     }
 
-    void UI::Initialize() {
+    void Application::Initialize() {
         if (!glfwInit()) {
             throw std::runtime_error("Failed to initialize GLFW");
         }
@@ -516,7 +622,13 @@ namespace Mio {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-        window = glfwCreateWindow(720, 600, "MioFramework", nullptr, nullptr);
+        window = glfwCreateWindow(720, 600, name.c_str(), nullptr, nullptr);
+        if (std::filesystem::exists(icon)) {
+            GLFWimage image;
+            image.pixels = static_cast<unsigned char *>(Utils::LoadTextureToRAM(icon.c_str()));
+            glfwSetWindowIcon(window, 1, &image);
+        }
+
         if (!window) {
             glfwTerminate();
             throw std::runtime_error("Failed to create GLFW window");
@@ -541,21 +653,15 @@ namespace Mio {
         glfwSetWindowSizeCallback(window, glfw_window_size_callback);
         glfwSetKeyCallback(window, glfw_key_callback);
         glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);
-
-        ed::Config config;
-        config.SettingsFile = "Simple.json";
-        m_Context = ed::CreateEditor(&config);
-        ed::SetCurrentEditor(m_Context);
     }
 
-    void UI::Update() {
+    void Application::Update() {
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGuiIO&io = ImGui::GetIO();
-        static int nextLinkId = 999; {
+        ImGuiIO&io = ImGui::GetIO(); {
             for (auto&item: manifests) {
                 for (auto&ui: item->sManager) {
                     ui->Update();
@@ -567,7 +673,6 @@ namespace Mio {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         ImGui::EndFrame();
 
-
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
             GLFWwindow* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
@@ -577,26 +682,25 @@ namespace Mio {
         glfwSwapBuffers(window);
     }
 
-    void UI::Shutdown() const {
+    void Application::Shutdown() const {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
         glfwDestroyWindow(window);
-        ed::DestroyEditor(m_Context);
         glfwTerminate();
     }
 
-    void UI::AddManifest(const std::shared_ptr<GUIManifest>&manifest) {
+    void Application::AddManifest(std::shared_ptr<GUIManifest>&manifest) {
         manifests.emplace_back(manifest);
     }
 
-    void UI::RemoveManifest(UUid uuid) {
+    void Application::RemoveManifest(UUid uuid) {
         std::erase_if(manifests, [&](const std::shared_ptr<GUIManifest>&item) {
             return item->sUUID == uuid;
         });
     }
 
-    std::string UI::AddFont(const std::string&fontPath, float size) {
+    std::string Application::AddFont(const std::string&fontPath, float size) {
         ImGuiIO&io = ImGui::GetIO();
 
         const auto font = io.Fonts->AddFontFromFileTTF(fontPath.c_str(), size, nullptr,
@@ -606,16 +710,16 @@ namespace Mio {
         return name;
     }
 
-    void UI::RemoveFont(const std::string&fontPath) {
+    void Application::RemoveFont(const std::string&fontPath) {
         Fonts.erase(fontPath);
     }
 
-    void UI::SetFont(const std::string&fontPath) {
+    void Application::SetFont(const std::string&fontPath) {
         ImGuiIO&io = ImGui::GetIO();
         io.FontDefault = Fonts[fontPath];
     }
 
-    void UI::SetStyleDefault() {
+    void Application::SetStyleDefault() {
         ImGuiStyle&style = ImGui::GetStyle();
         style.FrameRounding = 4.0f;
         style.Colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.00f); // Black text

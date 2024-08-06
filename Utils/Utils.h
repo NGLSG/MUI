@@ -6,6 +6,8 @@ namespace Mio {
     class Utils {
     public:
         static uint32_t LoadTexture(const char* filename);
+
+        static void* LoadTextureToRAM(const char* filename);
     };
 }
 

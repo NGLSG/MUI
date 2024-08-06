@@ -60,7 +60,6 @@ namespace Mio {
 
             Pin(int id, const char* name, PinType type): ID(id), Node(nullptr), Name(name), Type(type),
                                                          Kind(PinKind::Input) {
-
             }
         };
 
@@ -77,19 +76,82 @@ namespace Mio {
 
         Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)): ID(id), Name(name), Color(color),
             Type(NodeType::Blueprint), Size(0, 0) {
+        }
 
+        inline static std::map<std::string, std::vector<Node>> Nodes;
+
+        void Build() {
+            for (auto&pin: Inputs) {
+                pin.Node = this;
+                pin.Kind = PinKind::Input;
+            }
+            for (auto&pin: Outputs) {
+                pin.Node = this;
+                pin.Kind = PinKind::Output;
+            }
+        }
+
+        void Update() {
+            ed::BeginNode(ID);
+            ed::PushStyleColor(ed::StyleColor_NodeBg, Color);
+            for (auto&pin: Inputs) {
+                ed::BeginPin(pin.ID, ed::PinKind::Input);
+                ed::PinPivotAlignment(ImVec2(0.0f, 0.5f));
+                ImGui::Text(pin.Name.c_str());
+                ed::PopStyleColor();
+                ed::EndPin();
+            }
+            for (auto&pin: Outputs) {
+                ed::BeginPin(pin.ID, ed::PinKind::Output);
+                ed::PinPivotAlignment(ImVec2(1.0f, 0.5f));
+                ImGui::Text(pin.Name.c_str());
+                ed::PopStyleColor();
+                ed::EndPin();
+            }
+            ed::PopStyleColor();
+            ed::EndNode();
         }
     };
 
-    class NodeEditor : public UIManager {
+    struct Link {
+        ed::LinkId ID;
+
+        ed::PinId StartPinID;
+        ed::PinId EndPinID;
+
+        ImColor Color;
+
+        Link(ed::LinkId id, ed::PinId startPinId, ed::PinId endPinId): ID(id), StartPinID(startPinId),
+                                                                       EndPinID(endPinId), Color(255, 255, 255) {
+        }
+    };
+
+    class NodeEditor : public UIBase {
     public:
         struct Data {
+            std::string name;
+            std::string savePath;
         };
 
+        static std::shared_ptr<NodeEditor> Create(Data data) {
+            return std::make_shared<NodeEditor>(data);
+        }
+
+        explicit NodeEditor(Data data);
+
+        void Update() override;
+
+        void Save(const std::string&path);
+
+        void Load(const std::string&path);
+
     private:
+        std::vector<Link> links;
+        std::vector<Node> nodes;
         ed::EditorContext* context;
         std::set<ed::NodeId> selectedNodes;
         ed::Config config;
+        Data cData;
     };
 
     class Button : public UIBase {
@@ -158,7 +220,7 @@ namespace Mio {
 
         struct Data {
             std::string name;
-            bool* value;
+            std::shared_ptr<bool> value;
         };
 
         static std::shared_ptr<CheckBox> Create(const Data&data, std::string name) {
@@ -284,7 +346,7 @@ namespace Mio {
 
         struct Data {
             std::string name;
-            int* v = nullptr;
+            std::shared_ptr<int> v = std::make_shared<int>();
             int v_button = 0;
         };
 
@@ -353,7 +415,7 @@ namespace Mio {
         struct Data {
             const char* label = "";
             Type type;
-            void* v;
+            std::shared_ptr<void> v = std::make_shared<float>();
             int components = 0;
             float v_min;
             float v_max;
@@ -387,7 +449,7 @@ namespace Mio {
 
         struct Data {
             std::string name;
-            ImVec4* v;
+            std::shared_ptr<ImVec4> v = std::make_shared<ImVec4>();
             ImGuiColorEditFlags flags = 0;
             ImVec4 ref_col = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
         };
@@ -418,7 +480,7 @@ namespace Mio {
 
         struct Data {
             std::string name;
-            ImVec4* v;
+            std::shared_ptr<ImVec4> v = std::make_shared<ImVec4>();
             ImGuiColorEditFlags flags = 0;
         };
 
@@ -482,7 +544,7 @@ namespace Mio {
         friend class YAML::convert<std::shared_ptr<UIBase>>;
 
         struct Data {
-            float* progress;
+            std::shared_ptr<float> progress = std::make_shared<float>(0.f);
             const char* overlay = "";
         };
 
@@ -503,6 +565,7 @@ namespace Mio {
     private:
         Data cData;
     };
+
 
     class MenuItem : public UIBase {
     public:
@@ -547,6 +610,65 @@ namespace Mio {
         }
 
         TreeNode(Data data, std::string name);
+
+        void Modify(const Data&data);
+
+        void Update() override;
+
+
+        Data& GetData() {
+            return cData;
+        }
+
+    private:
+        Data cData;
+    };
+
+    class Group : public UIManager {
+    public:
+        friend class YAML::convert<std::shared_ptr<UIBase>>;
+
+        struct Data {
+            std::string name;
+        };
+
+        static std::shared_ptr<Group> Create(const Data&data) {
+            return std::make_shared<Group>(data, data.name);
+        }
+
+        Group(Data data, std::string name);
+
+        void Modify(const Data&data);
+
+        void Update() override;
+
+        Data& GetData() {
+            return cData;
+        }
+
+    private:
+        Data cData;
+    };
+
+
+    class Popup : public UIManager {
+    public:
+        friend class YAML::convert<std::shared_ptr<UIBase>>;
+
+        struct Data {
+            std::string name;
+            ImGuiWindowFlags flags = 0;
+        };
+
+        static std::shared_ptr<Popup> Create(const Data&data) {
+            return std::make_shared<Popup>(data, data.name);
+        }
+
+        Popup(Data data, std::string name);
+
+        void Open() {
+            ImGui::OpenPopup(cData.name.c_str());
+        }
 
         void Modify(const Data&data);
 
@@ -626,6 +748,7 @@ namespace Mio {
             std::string name = "";
             bool p_open = NULL;
             ImGuiWindowFlags flags = 0;
+            bool fullScreen = false;
         };
 
         static std::shared_ptr<Window> Create(const Data&data, std::string name) {
@@ -680,15 +803,21 @@ namespace Mio {
         std::vector<std::shared_ptr<MenuItem>> menuItems;
     };
 
-    class UI {
+    class Application {
     public:
+        Application() {
+        }
+
+        Application(std::string name, std::string iconPath): name(std::move(name)), icon(std::move(iconPath)) {
+        }
+
         void Initialize();
 
         void Update();
 
         void Shutdown() const;
 
-        void AddManifest(const std::shared_ptr<GUIManifest>&manifest);
+        void AddManifest(std::shared_ptr<GUIManifest>&manifest);
 
         void RemoveManifest(UUid uuid);
 
@@ -710,9 +839,7 @@ namespace Mio {
             return window;
         }
 
-        UI() = default;
-
-        ~UI() = default;
+        ~Application() = default;
 
     private:
         static void SetStyleDefault();
@@ -736,12 +863,12 @@ namespace Mio {
             glfwSetWindowSize(window, width, height);
         }
 
-
+        std::string name;
+        std::string icon;
         GLFWwindow* window{};
         bool show_demo_window = true;
         bool show_another_window = false;
         ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-        ed::EditorContext* m_Context = nullptr;
         std::vector<std::shared_ptr<GUIManifest>> manifests;
         std::map<std::string, ImFont *> Fonts;
     };

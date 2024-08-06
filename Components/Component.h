@@ -39,7 +39,7 @@ namespace Mio {
 
     class Component : std::enable_shared_from_this<Component> {
     public:
-        friend class UI;
+        friend class Application;
 
         Component() {
             uuid = UUid::New();

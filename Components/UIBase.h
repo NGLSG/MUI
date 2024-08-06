@@ -33,6 +33,8 @@ namespace Mio {
             Text,
             Tooltip,
             Window,
+            Group,
+            Popup,
             None
         };
 
@@ -61,6 +63,8 @@ namespace Mio {
         void BeginFrame() override;
 
         void EndFrame() override;
+
+        std::vector<std::string> RefVariables;
 
 
         bool Active = true;
