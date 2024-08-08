@@ -35,6 +35,7 @@ namespace Mio {
             Window,
             Group,
             Popup,
+            Console,
             None
         };
 
@@ -68,6 +69,7 @@ namespace Mio {
 
 
         bool Active = true;
+        bool NoChild = false;
     };
 } // Mio
 

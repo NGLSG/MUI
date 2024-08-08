@@ -1,6 +1,7 @@
 #include "ResourceManager.h"
 #include "Encryption.h"
 #include "Library/RyoCompression/Utils.h"
+#include "GUIManifest.h"
 
 namespace Mio {
     void ResourcePackage::AddFiles(std::vector<std::string> files) {
@@ -85,9 +86,5 @@ namespace Mio {
 
     bool ResourceManager::SaveManifest(const std::shared_ptr<GUIManifest>&manifest) {
         return Save<GUIManifest>(*manifest, manifest->SavePath + ".manifest");
-    }
-
-    Manifests ResourceManager::LoadManifests(std::string path) {
-        return Load<Mio::Manifests>(path);
     }
 }

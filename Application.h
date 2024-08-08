@@ -2,6 +2,7 @@
 #define UI_H
 
 #include <array>
+#include <chrono>
 #include <functional>
 #include <imgui.h>
 #include <iostream>
@@ -279,8 +280,8 @@ namespace Mio {
 
         struct Data {
             const char* label = "";
-            char* buf;
-            size_t buf_size;
+            char* buf = new char[8192]("");
+            size_t buf_size = 8192;
             const char* hint = "";
             bool Multiline = false;
             ImGuiInputTextFlags flags = 0;
@@ -513,7 +514,7 @@ namespace Mio {
             std::string name;
             const char* preview_value = "";
             std::vector<std::string> items;
-            int* current_item;
+            int current_item = 0;
             ImGuiComboFlags flags = 0;
         };
 
@@ -528,7 +529,11 @@ namespace Mio {
         void Update() override;
 
         int GetValue() const {
-            return *cData.current_item;
+            return cData.current_item;
+        }
+
+        std::string GetSelectedItem() const {
+            return cData.items[cData.current_item];
         }
 
         Data& GetData() {
@@ -650,6 +655,65 @@ namespace Mio {
         Data cData;
     };
 
+    class Console : public UIBase {
+    public:
+        friend class YAML::convert<std::shared_ptr<UIBase>>;
+        struct LogData {
+            enum Level {
+                LogDebug,
+                LogTrace,
+                LogInfo,
+                LogWarning,
+                LogError,
+                LogFatal
+            };
+
+            std::string message;
+            Level level;
+            std::string time;
+
+            LogData(const std::string&message, const Level level = LogInfo) {
+                this->message = message;
+                this->level = level;
+                time = GetCurrentTime();
+            }
+
+        private:
+            inline static std::string GetCurrentTime() {
+                std::time_t now = std::time(nullptr);
+                std::tm* localTime = std::localtime(&now);
+                char buffer[20];
+                std::strftime(buffer, sizeof(buffer), "%H:%M:%S", localTime);
+                return std::string(buffer);
+            }
+        };
+
+        struct Data {
+            std::string name;
+            std::vector<LogData> items;
+        };
+
+        static std::shared_ptr<Console> Create(const Data&data, std::string name) {
+            return std::make_shared<Console>(data, name);
+        }
+
+        Console(Data data, std::string name);
+
+        void Modify(const Data&data);
+
+        void Update() override;
+
+        void AddLog(const LogData&log);
+
+        Data& GetData() {
+            return cData;
+        }
+
+    private:
+        Data cData;
+        std::vector<LogData> copied;
+        char* buf = new char[8192]("");
+    };
 
     class Popup : public UIManager {
     public:
@@ -667,7 +731,11 @@ namespace Mio {
         Popup(Data data, std::string name);
 
         void Open() {
-            ImGui::OpenPopup(cData.name.c_str());
+            open = true;
+        }
+
+        void Close() {
+            open = false;
         }
 
         void Modify(const Data&data);
@@ -681,6 +749,7 @@ namespace Mio {
 
     private:
         Data cData;
+        bool open = false;
     };
 
     class Tooltip : public UIManager {

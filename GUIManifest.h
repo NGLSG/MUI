@@ -9,7 +9,6 @@
 #include "Application.h"
 
 namespace Mio {
-    class ResourceManager;
     struct Manifests;
 
     class GUIManifest : public std::enable_shared_from_this<GUIManifest> {
@@ -21,13 +20,42 @@ namespace Mio {
         std::string SavePath;
 
         template<typename T>
-        std::shared_ptr<T> GetUIByName(const std::string&name) {
-            return ResourceManager::GetUIByName<T>(shared_from_this(), name);
+        std::shared_ptr<T> GetUI(const std::string&name) {
+            return ResourceManager::GetUI<T>(shared_from_this(), name);
         }
 
         template<typename T>
-        std::shared_ptr<T> GetUIByUID(const UUid&uid) {
-            return ResourceManager::GetUIByUID<T>(shared_from_this(), uid);
+        std::shared_ptr<T> GetUI(const UUid&uid) {
+            return ResourceManager::GetUI<T>(shared_from_this(), uid);
+        }
+
+        void RemoveUI(const std::string&name) {
+            ResourceManager::RemoveUI(shared_from_this(), name);
+            for (auto&it: sManager) {
+                it->RemoveUIElement(name);
+            }
+        }
+
+        void RemoveUI(const UUid&uid) {
+            ResourceManager::RemoveUI(shared_from_this(), uid);
+            for (auto&it: sManager) {
+                it->RemoveUIElement(uid);
+            }
+        }
+
+        void TryRemoveManager(const std::string&name) {
+            for (auto it = sManager.begin(); it != sManager.end(); ++it) {
+                if ((*it)->cName == name) {
+                    sManager.erase(it);
+                    return;
+                }
+            }
+        }
+
+        void TryAddManager(const std::shared_ptr<UIManager>&manager) {
+            if (std::ranges::find(sManager, manager) == sManager.end()) {
+                sManager.push_back(manager);
+            }
         }
 
         GUIManifest() = default;
@@ -42,7 +70,6 @@ namespace Mio {
         }
     };
 } // Mio
-
 
 namespace YAML {
     template<typename T>
@@ -133,6 +160,9 @@ namespace YAML {
                 case Mio::UIBase::Type::Group:
                     node = "Group";
                     break;
+                case Mio::UIBase::Type::Console:
+                    node = "Console";
+                    break;
                 default:
                     node = "None";
                     break;
@@ -201,6 +231,9 @@ namespace YAML {
             }
             else if (sType == "Group") {
                 rhs = Mio::UIBase::Type::Group;
+            }
+            else if (sType == "Console") {
+                rhs = Mio::UIBase::Type::Console;
             }
             else {
                 rhs = Mio::UIBase::Type::None;
@@ -459,7 +492,7 @@ namespace YAML {
                                 if (valueNode.size() == 2) {
                                     rhs.LogVec2[key] = ImVec2(valueNode[0].as<float>(), valueNode[1].as<float>());
                                 }
-                                else if (valueNode.size() == 4 && key == "Colors") {
+                                else if (key == "Colors") {
                                     for (int i = 0; i < ImGuiCol_COUNT; ++i) {
                                         rhs.LogVec4[key][i] = ImVec4(valueNode[i][0].as<float>(),
                                                                      valueNode[i][1].as<float>(),
@@ -550,6 +583,23 @@ namespace YAML {
     };
 
     template<>
+    struct convert<Mio::Console::Data> {
+        static Node encode(const Mio::Console::Data&rhs) {
+            Node node;
+            node["name"] = rhs.name;
+            return node;
+        }
+
+        static bool decode(const Node&node, Mio::Console::Data&rhs) {
+            if (!node.IsMap()) {
+                return false;
+            }
+            rhs.name = node["name"].as<std::string>();
+            return true;
+        }
+    };
+
+    template<>
     struct convert<Mio::ImageButton::Data> {
         static Node encode(const Mio::ImageButton::Data&rhs) {
             Node node;
@@ -625,7 +675,7 @@ namespace YAML {
         static Node encode(const Mio::InputText::Data&rhs) {
             Node node;
             node["label"] = rhs.label;
-            node["buf"] = std::string(rhs.buf);
+            node["buf"] = rhs.buf;
             node["buf_size"] = rhs.buf_size;
             node["hint"] = rhs.hint;
             node["Multiline"] = rhs.Multiline;
@@ -859,7 +909,7 @@ namespace YAML {
             node["name"] = rhs.name;
             node["preview_value"] = rhs.preview_value;
             node["items"] = rhs.items;
-            node["current_item"] = *rhs.current_item;
+            node["current_item"] = rhs.current_item;
             node["flags"] = rhs.flags;
             return node;
         }
@@ -871,7 +921,7 @@ namespace YAML {
             rhs.name = node["name"].as<std::string>();
             rhs.preview_value = node["preview_value"].as<std::string>().c_str();
             rhs.items = node["items"].as<std::vector<std::string>>();
-            *rhs.current_item = node["current_item"].as<int>();
+            rhs.current_item = node["current_item"].as<int>();
             rhs.flags = node["flags"].as<ImGuiComboFlags>();
             return true;
         }
@@ -1053,6 +1103,7 @@ namespace YAML {
             node["transform"] = rhs->transform;
             node["style"] = rhs->style.ChangeLog;
             node["refVariables"] = rhs->RefVariables;
+            node["Active"] = rhs->Active;
             switch (rhs->cType) {
                 case Mio::UIBase::Type::Button: {
                     node["data"] = std::reinterpret_pointer_cast<Mio::Button>(rhs)->cData;
@@ -1069,6 +1120,9 @@ namespace YAML {
                 case Mio::UIBase::Type::ColorEditor: {
                     node["data"] = std::reinterpret_pointer_cast<Mio::ColorEditor>(rhs)->cData;
                     break;
+                }
+                case Mio::UIBase::Type::Console: {
+                    node["data"] = std::reinterpret_pointer_cast<Mio::Console>(rhs)->cData;
                 }
                 case Mio::UIBase::Type::ColorPicker: {
                     node["data"] = std::reinterpret_pointer_cast<Mio::ColorPicker>(rhs)->cData;
@@ -1204,6 +1258,10 @@ namespace YAML {
                     rhs = Mio::CheckBox::Create(node["data"].as<Mio::CheckBox::Data>(), rhs->cName);
                     rhs->GetComponent<Mio::Event>().SetFuncs(node["events"].as<std::vector<std::string>>());
                     break;
+                case Mio::UIBase::Type::Console: {
+                    rhs = Mio::Console::Create(node["data"].as<Mio::Console::Data>(), rhs->cName);
+                    break;
+                }
                 case Mio::UIBase::Type::ColorEditor:
                     rhs = Mio::ColorEditor::Create(node["data"].as<Mio::ColorEditor::Data>(), rhs->cName);
                     break;
@@ -1315,6 +1373,7 @@ namespace YAML {
                 rhs->RefVariables = node["RefVariables"].as<std::vector<std::string>>();
             }
 
+            rhs->Active = node["Active"].as<bool>();
             rhs->GetComponent<Mio::Transform>().SetTransform(node["transform"].as<Mio::Transform>());
             if (node["style"].IsDefined() && !node["style"].IsNull()) {
                 rhs->GetComponent<Mio::Style>().Modify(node["style"].as<Mio::ChangeLogs>());
@@ -1408,6 +1467,7 @@ namespace YAML {
                         }
                         rhs->uiElements.push_back(uiElement);
                     }
+                    break;
                 case Mio::UIBase::Type::MenuBar: rhs = Mio::MenuBar::Create(
                                                      node["data"].as<Mio::MenuBar::Data>(), rhs->cName);
                     for (const auto&element: node["menuItems"]) {
@@ -1438,7 +1498,7 @@ namespace YAML {
                         }
                         rhs->uiElements.push_back(uiElement);
                     }
-
+                    break;
                 default:
                     return false;
                     break;
@@ -1448,8 +1508,34 @@ namespace YAML {
                 rhs->GetComponent<Mio::Style>().Modify(node["style"].as<Mio::ChangeLogs>());
             }
             rhs->cType = type;
+            rhs->Active = node["Active"].as<bool>();
             rhs->cName = node["name"].as<std::string>();
             rhs->uuid = node["UID"].as<Mio::UUid>();
+            return true;
+        }
+    };
+
+    template<>
+    struct convert<std::vector<std::shared_ptr<Mio::UIManager>>> {
+        static Node encode(const std::vector<std::shared_ptr<Mio::UIManager>>&rhs) {
+            Node node;
+            for (const auto&element: rhs) {
+                node.push_back(convert<std::shared_ptr<Mio::UIManager>>::encode(element));
+            }
+            return node;
+        }
+
+        static bool decode(const Node&node, std::vector<std::shared_ptr<Mio::UIManager>>&rhs) {
+            if (!node.IsSequence()) {
+                return false;
+            }
+            for (const auto&element: node) {
+                std::shared_ptr<Mio::UIManager> uiManager = std::make_shared<Mio::UIManager>();
+                if (!convert<std::shared_ptr<Mio::UIManager>>::decode(element, uiManager)) {
+                    return false;
+                }
+                rhs.push_back(uiManager);
+            }
             return true;
         }
     };
@@ -1472,14 +1558,9 @@ namespace YAML {
             }
             rhs.sName = node["name"].as<std::string>();
             rhs.sVersion = node["version"].as<std::string>();
-            for (const auto&element: node["Managers"]) {
-                std::shared_ptr<Mio::UIManager> uiManager = std::make_shared<Mio::UIManager>();
-                if (!convert<std::shared_ptr<Mio::UIManager>>::decode(element, uiManager)) {
-                    return false;
-                }
-                rhs.sManager.push_back(uiManager);
-            }
+            rhs.sManager = node["Managers"].as<std::vector<std::shared_ptr<Mio::UIManager>>>();
             rhs.sUUID = node["uid"].as<Mio::UUid>();
+            rhs.SavePath = node["SavePath"].as<std::string>();
             return true;
         }
     };

@@ -205,7 +205,7 @@ namespace Mio {
             }
             if (cData.buf[0] == '\0' && cData.hint != "") {
                 ImGui::SameLine();
-                ImGui::TextDisabled("(%s)", cData.hint);
+                ImGui::TextDisabled("%s", cData.hint);
             }
 
             UIBase::EndFrame();
@@ -363,6 +363,8 @@ namespace Mio {
             UIBase::BeginFrame();
             if (ImGui::ColorPicker4(cData.name.c_str(), reinterpret_cast<float *>(cData.v.get()), cData.flags,
                                     reinterpret_cast<float *>(&cData.ref_col))) {
+                std::cout << "R:" << cData.v->x << " G:" << cData.v->y << " B:" << cData.v->z << " A:" << cData.v->w <<
+                        std::endl;
             }
             UIBase::EndFrame();
         }
@@ -426,7 +428,7 @@ namespace Mio {
         if (Active) {
             UIBase::BeginFrame();
             if (ImGui::TreeNodeEx(cData.name.c_str(), cData.flags)) {
-                BeginFrame();
+                UIManager::Update();
                 ImGui::TreePop();
             }
             UIBase::EndFrame();
@@ -445,9 +447,79 @@ namespace Mio {
     void Group::Update() {
         UIBase::BeginFrame();
         ImGui::BeginGroup();
-        BeginFrame();
+        UIManager::Update();
         ImGui::EndGroup();
         UIBase::EndFrame();
+    }
+
+    Console::Console(Data data, std::string name): cData(std::move(data)) {
+        cType = Type::Console;
+        cName = std::move(name);
+    }
+
+    void Console::Modify(const Data&data) {
+        cData = data;
+    }
+
+    void Console::Update() {
+        if (Active) {
+            UIBase::BeginFrame();
+            if (ImGui::Begin(cData.name.c_str(),NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+                if (ImGui::InputTextWithHint("###Search", "Filter", buf, sizeof(buf),
+                                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+                    cData.items.clear();
+                    for (auto&item: copied) {
+                        if (strstr(item.message.c_str(), buf)) {
+                            cData.items.push_back(item);
+                        }
+                    }
+                }
+                ImGui::Text(cData.name.c_str());
+                if (ImGui::BeginChild("###Content", ImVec2(-1, 64), ImGuiChildFlags_None)) {
+                    for (auto&item: cData.items) {
+                        std::string formattedMessage = "[" + item.time + "] ";
+                        switch (item.level) {
+                            case LogData::LogDebug:
+                                formattedMessage += "DEBUG: ";
+                                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), formattedMessage.c_str());
+                                break;
+                            case LogData::LogTrace:
+                                formattedMessage += "TRACE: ";
+                                ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), formattedMessage.c_str());
+                                break;
+                            case LogData::LogInfo:
+                                formattedMessage += "INFO: ";
+                                ImGui::TextColored(ImVec4(0.0f, 0.0f, 1.0f, 1.0f), formattedMessage.c_str());
+                                break;
+                            case LogData::LogWarning:
+                                formattedMessage += "WARNING: ";
+                                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), formattedMessage.c_str());
+                                break;
+                            case LogData::LogError:
+                                formattedMessage += "ERROR: ";
+                                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), formattedMessage.c_str());
+                                break;
+                            case LogData::LogFatal:
+                                formattedMessage += "FATAL: ";
+                                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), formattedMessage.c_str());
+                                break;
+                            default:
+                                ImGui::Text(formattedMessage.c_str());
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted(item.message.c_str());
+                    }
+                }
+                ImGui::EndChild();
+                ImGui::End();
+            }
+            UIBase::EndFrame();
+        }
+    }
+
+    void Console::AddLog(const LogData&log) {
+        cData.items.push_back(log);
+        copied.emplace_back(log);
     }
 
     Popup::Popup(Data data, std::string name): cData(std::move(data)) {
@@ -460,12 +532,17 @@ namespace Mio {
     }
 
     void Popup::Update() {
-        UIBase::BeginFrame();
-        if (ImGui::BeginPopup(cData.name.c_str(), cData.flags)) {
-            BeginFrame();
-            ImGui::EndPopup();
+        if (Active) {
+            UIBase::BeginFrame();
+            if (open) {
+                ImGui::OpenPopup(cData.name.c_str());
+            }
+            if (ImGui::BeginPopup(cData.name.c_str())) {
+                UIManager::Update();
+                ImGui::EndPopup();
+            }
+            UIBase::EndFrame();
         }
-        UIBase::EndFrame();
     }
 
     Tooltip::Tooltip(Data data, std::string name): cData(std::move(data)) {
@@ -503,16 +580,20 @@ namespace Mio {
             UIBase::BeginFrame();
             if (ImGui::BeginListBox(cData.name.c_str(), {-1, -1})) {
                 for (int i = 0; i < cData.items.size(); i++) {
-                    const char* item_text = cData.items[i].c_str();
-                    if (ImGui::Selectable(item_text, *cData.current_item == i)) {
-                        *cData.current_item = i;
-                    }
-                    if (ImGui::IsItemHovered()) {
-                        ImGui::SetTooltip(item_text);
+                    if (!cData.items.empty()) {
+                        const char* item_text = cData.items[i].c_str();
+                        if (ImGui::Selectable(item_text, cData.current_item == i)) {
+                            cData.current_item = i;
+                        }
+                        if (ImGui::IsItemHovered()) {
+                            ImGui::SetTooltip(item_text);
+                        }
                     }
                 }
+                ImGui::EndListBox();
             }
-            ImGui::EndListBox();
+
+            UIBase::EndFrame();
         }
     }
 
@@ -530,7 +611,7 @@ namespace Mio {
             UIBase::BeginFrame();
 
             ImGui::BeginChild(cData.name.c_str(), cData.size, cData.child_flags, cData.window_flags);
-            BeginFrame();
+            UIManager::Update();
             ImGui::EndChild();
             UIBase::EndFrame();
         }
@@ -549,11 +630,12 @@ namespace Mio {
         if (Active) {
             UIBase::BeginFrame();
             if (cData.fullScreen) {
-                ImGui::SetNextWindowPos(ImVec2(0, 0));
-                ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y));
+                ImGui::SetNextWindowPos(ImGui::GetMainViewport()->WorkPos);
+                ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
+                ImGui::SetNextWindowCollapsed(false, ImGuiCond_Always);
             }
             if (ImGui::Begin(cData.name.c_str(), &cData.p_open, cData.flags)) {
-                BeginFrame();
+                UIManager::Update();
             }
             ImGui::End();
             UIBase::EndFrame();
@@ -658,9 +740,11 @@ namespace Mio {
     void Application::Update() {
         glfwPollEvents();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport();
         ImGuiIO&io = ImGui::GetIO(); {
             for (auto&item: manifests) {
                 for (auto&ui: item->sManager) {
@@ -737,6 +821,7 @@ namespace Mio {
         style.Colors[ImGuiCol_FrameBg] = ImVec4(0.85f, 0.85f, 0.85f, 1.00f); // Input box background
         style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f); // Input box hover
         style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.47f, 1.00f, 1.00f); // Checkbox checkmark
+        style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.1f, 0.1f, 0.1f, 1.00f);
         style.ChildBorderSize = 0.0f;
         style.FrameBorderSize = 0.0f;
         style.FrameBorderSize = 1.0f; // Border size

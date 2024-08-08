@@ -4,7 +4,8 @@
 
 namespace Mio {
     void Event::AddListener(std::string name) {
-        funcs.push_back(name);
+        if (std::ranges::find(funcs, name) == funcs.end())
+            funcs.push_back(name);
     }
 
     void Mio::Event::RemoveListener(std::string name) {

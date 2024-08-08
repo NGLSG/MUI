@@ -7,15 +7,24 @@ namespace Mio {
     public:
         friend class YAML::convert<std::shared_ptr<UIManager>>;
 
-        std::shared_ptr<UIBase> GetUiElement(UUid uuid);
+        UIManager() {
+            //NoChild = true;
+        }
 
-        void AddUiElement(const std::shared_ptr<UIBase>&uiElement);
+        std::shared_ptr<UIBase> GetUIElement(UUid uuid);
 
-        void RemoveUiElement(UUid uuid);
+        void AddUIElement(const std::shared_ptr<UIBase>&uiElement);
 
-        void BeginFrame() override;
+        void AddUIElements(const std::vector<std::shared_ptr<UIBase>>&uiElements);
+
+        void RemoveUIElement(UUid uuid);
+
+        void RemoveUIElement(const std::string&name);
+
+        void Update() override;
 
         std::vector<std::shared_ptr<UIBase>> uiElements;
+        std::set<std::shared_ptr<UIBase>> uniqueUIElements;
     };
 }
 

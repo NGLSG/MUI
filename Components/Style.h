@@ -248,7 +248,6 @@ namespace Mio {
 
     private:
         ImGuiStyle cStyle;
-        ImGuiStyle copy;
     };
 } // Mio
 
