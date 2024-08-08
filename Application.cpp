@@ -203,10 +203,6 @@ namespace Mio {
                     GetComponent<Event>().BeginFrame();
                 }
             }
-            if (cData.buf[0] == '\0' && cData.hint != "") {
-                ImGui::SameLine();
-                ImGui::TextDisabled("%s", cData.hint);
-            }
 
             UIBase::EndFrame();
         }
@@ -704,7 +700,7 @@ namespace Mio {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-        window = glfwCreateWindow(720, 600, name.c_str(), nullptr, nullptr);
+        window = glfwCreateWindow(900, 900 / 1.2, name.c_str(), nullptr, nullptr);
         if (std::filesystem::exists(icon)) {
             GLFWimage image;
             image.pixels = static_cast<unsigned char *>(Utils::LoadTextureToRAM(icon.c_str()));
@@ -720,7 +716,7 @@ namespace Mio {
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
         ImGuiIO&io = ImGui::GetIO();
-        SetFont(AddFont((ResourcePath / "assets/font/YaHei.ttf").string(), 16));
+        SetFont(AddFont((ResourcePath / "assets/font/SourceBlack.otf").string(), 16));
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking

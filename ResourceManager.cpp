@@ -14,7 +14,8 @@ namespace Mio {
 
     std::string ResourcePackage::AddFile(std::string file) {
         if (std::ranges::find(files, file) == files.end()) {
-            this->files.emplace_back(file);
+            this->files.emplace_back((ResourcePath / file).string());
+            RC::Utils::Directory::Copy(file, (ResourcePath / file).string());
         }
         return (ResourcePath / file).string();
     }
@@ -24,12 +25,15 @@ namespace Mio {
             RC::Utils::Directory::Create(ResourcePath.string());
         }
         for (auto&file: files) {
-            if (file != ResourcePath) {
-                RC::Utils::Directory::Copy(file, (ResourcePath / file).string());
-                file = (ResourcePath / file).string();
+            if (file.find(ResourcePath.string()) == std::string::npos) {
+                if (RC::Utils::Directory::Exists(file)) {
+                    RC::Utils::Directory::Copy(file, (ResourcePath / file).string());
+                    file = (ResourcePath / file).string();
+                }
             }
         }
         if (!RC::Compression::Compress(files, path, ComressionType)) {
+            std::cerr << "Failed to compress files" << std::endl;
             return false;
         }
         Encryption::AES::Encrypt(path, PASSWORD, IV, finalpath, true);
