@@ -8,7 +8,7 @@ namespace Mio {
         friend class YAML::convert<std::shared_ptr<UIManager>>;
 
         UIManager() {
-            //NoChild = true;
+            IsManager = true;
         }
 
         std::shared_ptr<UIBase> GetUIElement(UUid uuid);

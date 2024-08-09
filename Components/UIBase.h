@@ -69,7 +69,7 @@ namespace Mio {
 
 
         bool Active = true;
-        bool NoChild = false;
+        bool IsManager = false;
     };
 } // Mio
 
