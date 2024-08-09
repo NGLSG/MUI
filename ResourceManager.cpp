@@ -15,7 +15,8 @@ namespace Mio {
     std::string ResourcePackage::AddFile(std::string file) {
         if (std::ranges::find(files, file) == files.end()) {
             this->files.emplace_back((ResourcePath / file).string());
-            RC::Utils::Directory::Copy(file, (ResourcePath / file).string());
+            if (RC::Utils::File::Exists(file))
+                RC::Utils::Directory::Copy(file, (ResourcePath / file).string());
         }
         return (ResourcePath / file).string();
     }

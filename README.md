@@ -5,7 +5,7 @@
 </div>
 
 <div style="text-align: center; font-size: 28px;">Mio UI</div>
-<div style="text-align: center;"> simple ECS UI architecture based on imgui</div>
+<div style="text-align: center;"> 🚀 Simple ECS UI architecture based on imgui 🚀</div>
 
 # Features
 
