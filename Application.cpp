@@ -94,8 +94,12 @@ namespace Mio {
 
     void Button::Update() {
         if (Active) {
-            UIBase::BeginFrame();
 
+            UIBase::BeginFrame();
+            if (cData.autoSize) {
+                ImGui::GetFont()->FontSize = transform.cSize.x / static_cast<float>(converter.from_bytes(cData.name).
+                                                 length());
+            }
             if (ImGui::Button(cData.name.c_str(), {-1, -1})) {
                 GetComponent<Event>().BeginFrame();
             }
@@ -240,7 +244,12 @@ namespace Mio {
 
     void RadioButton::Update() {
         if (Active) {
+
             UIBase::BeginFrame();
+            if (cData.autoSize) {
+                ImGui::GetFont()->FontSize = transform.cSize.x / static_cast<float>(converter.from_bytes(cData.name).
+                                                 length());
+            }
             if (ImGui::RadioButton(cData.name.c_str(), cData.v.get(), cData.v_button)) {
                 GetComponent<Event>().BeginFrame();
             }

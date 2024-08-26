@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.28)
-
 find_package(OpenGL REQUIRED)
 add_subdirectory(glfw)
 add_subdirectory(entt)
