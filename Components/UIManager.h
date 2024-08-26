@@ -1,5 +1,6 @@
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
+#include "Event.h"
 #include "UIBase.h"
 
 namespace Mio {
@@ -9,6 +10,7 @@ namespace Mio {
 
         UIManager() {
             IsManager = true;
+            AddComponent<Event>();
         }
 
         std::shared_ptr<UIBase> GetUIElement(UUid uuid);
@@ -22,6 +24,10 @@ namespace Mio {
         void RemoveUIElement(const std::string&name);
 
         void Update() override;
+
+        void AddCustomGUIRendering(const std::string&name);
+
+        void RemoveCustomGUIRendering(const std::string&name);
 
         std::vector<std::shared_ptr<UIBase>> uiElements;
         std::set<std::shared_ptr<UIBase>> uniqueUIElements;

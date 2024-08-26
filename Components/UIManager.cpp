@@ -39,8 +39,17 @@ namespace Mio {
     }
 
     void UIManager::Update() {
+        GetComponent<Event>().BeginFrame();
         for (auto&uiElement: uiElements) {
             uiElement->Update();
         }
+    }
+
+    void UIManager::AddCustomGUIRendering(const std::string&name) {
+        GetComponent<Event>().AddListener(name);
+    }
+
+    void UIManager::RemoveCustomGUIRendering(const std::string&name) {
+        GetComponent<Event>().RemoveListener(name);
     }
 }

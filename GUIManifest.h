@@ -1172,7 +1172,7 @@ namespace YAML {
                     for (auto&uiElement: subWindow->uiElements) {
                         node["uiElements"].push_back(encode(uiElement));
                     }
-
+                    node["UIRender"] = subWindow->GetComponent<Mio::Event>().GetFuncs();
                     break;
                 }
                 case Mio::UIBase::Type::Window: {
@@ -1183,6 +1183,7 @@ namespace YAML {
                             node["uiElements"].push_back(encode(uiElement));
                         }
                     }
+                    node["UIRender"] = window->GetComponent<Mio::Event>().GetFuncs();
                     break;
                 }
                 case Mio::UIBase::Type::Text: {
@@ -1196,6 +1197,7 @@ namespace YAML {
                     for (auto&uiElement: treeNode->uiElements) {
                         node["uiElements"].push_back(encode(uiElement));
                     }
+                    node["UIRender"] = treeNode->GetComponent<Mio::Event>().GetFuncs();
 
                     break;
                 }
@@ -1205,6 +1207,7 @@ namespace YAML {
                     for (auto&uiElement: tooltip->uiElements) {
                         node["uiElements"].push_back(encode(uiElement));
                     }
+                    node["UIRender"] = tooltip->GetComponent<Mio::Event>().GetFuncs();
                     break;
                 }
                 case Mio::UIBase::Type::MenuBar: {
@@ -1213,6 +1216,7 @@ namespace YAML {
                     for (auto&menuItem: menuBar->menuItems) {
                         node["menuItems"].push_back(encode(menuItem));
                     }
+                    node["UIRender"] = menuBar->GetComponent<Mio::Event>().GetFuncs();
                     break;
                 }
                 case Mio::UIBase::Type::Group: {
@@ -1221,6 +1225,7 @@ namespace YAML {
                     for (auto&uiElement: group->uiElements) {
                         node["uiElements"].push_back(encode(uiElement));
                     }
+                    node["UIRender"] = group->GetComponent<Mio::Event>().GetFuncs();
                     break;
                 }
                 case Mio::UIBase::Type::Popup: {
@@ -1229,6 +1234,7 @@ namespace YAML {
                     for (auto&uiElement: popup->uiElements) {
                         node["uiElements"].push_back(encode(uiElement));
                     }
+                    node["UIRender"] = popup->GetComponent<Mio::Event>().GetFuncs();
                     break;
                 }
                 case Mio::UIBase::Type::MenuItem: {
@@ -1298,6 +1304,17 @@ namespace YAML {
                     rhs =
                             Mio::Text::Create(node["data"].as<Mio::Text::Data>(), rhs->cName);
                     break;
+                case Mio::UIBase::Type::SubWindow:
+                    rhs = Mio::SubWindow::Create(node["data"].as<Mio::SubWindow::Data>(), rhs->cName);
+                    for (const auto&element: node["uiElements"]) {
+                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
+                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
+                            return false;
+                        }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+                        std::dynamic_pointer_cast<Mio::SubWindow>(rhs)->uiElements.push_back(uiElement);
+                    }
                 case Mio::UIBase::Type::Tooltip:
                     rhs = Mio::Tooltip::Create(node["data"].as<Mio::Tooltip::Data>(), rhs->cName);
                     for (const auto&element: node["uiElements"]) {
@@ -1305,6 +1322,8 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
                         std::dynamic_pointer_cast<Mio::Tooltip>(rhs)->uiElements.push_back(uiElement);
                     }
                     break;
@@ -1315,6 +1334,8 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
                         std::dynamic_pointer_cast<Mio::TreeNode>(rhs)->uiElements.push_back(uiElement);
                     }
                     break;
@@ -1325,6 +1346,8 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
                         std::dynamic_pointer_cast<Mio::Window>(rhs)->uiElements.push_back(uiElement);
                     }
                     break;
@@ -1335,6 +1358,8 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
                         std::dynamic_pointer_cast<Mio::MenuBar>(rhs)->menuItems.push_back(
                             std::dynamic_pointer_cast<Mio::MenuItem>(uiElement));
                     }
@@ -1346,6 +1371,8 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
                         std::dynamic_pointer_cast<Mio::Group>(rhs)->uiElements.push_back(uiElement);
                     }
                     break;
@@ -1356,6 +1383,8 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
+                        if (node["UIRender"])
+                            rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
                         std::dynamic_pointer_cast<Mio::Popup>(rhs)->uiElements.push_back(uiElement);
                     }
                     break;
