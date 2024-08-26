@@ -570,6 +570,7 @@ namespace YAML {
         static Node encode(const Mio::Button::Data&rhs) {
             Node node;
             node["name"] = rhs.name;
+            node["autoSize"] = rhs.autoSize;
             return node;
         }
 
@@ -578,6 +579,9 @@ namespace YAML {
                 return false;
             }
             rhs.name = node["name"].as<std::string>();
+            if (node["autoSize"].IsDefined()) {
+                rhs.autoSize = node["autoSize"].as<bool>();
+            }
             return true;
         }
     };
@@ -735,12 +739,16 @@ namespace YAML {
             node["name"] = rhs.name;
             node["v"] = *rhs.v;
             node["v_button"] = rhs.v_button;
+            node["autoSize"] = rhs.autoSize;
             return node;
         }
 
         static bool decode(const Node&node, Mio::RadioButton::Data&rhs) {
             if (!node.IsMap()) {
                 return false;
+            }
+            if (node["autoSize"].IsDefined()) {
+                rhs.autoSize = node["autoSize"].as<bool>();
             }
             rhs.name = node["name"].as<std::string>();
             *rhs.v = node["v"].as<int>();

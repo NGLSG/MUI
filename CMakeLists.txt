@@ -15,6 +15,7 @@ file(GLOB header
 add_subdirectory(Library)
 
 include_directories(Utils Components)
+add_definitions(-DNOCRYPT)
 add_library(MUI SHARED STATIC ${src} ${header})
 target_link_libraries(MUI PUBLIC RyoCompress ImNodeEditor ImGui glfw EnTT::EnTT yaml-cpp::yaml-cpp)
 

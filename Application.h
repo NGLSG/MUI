@@ -161,6 +161,7 @@ namespace Mio {
 
         struct Data {
             std::string name;
+            bool autoSize = true;
         };
 
         static std::shared_ptr<Button> Create(const Data&data) {
@@ -348,6 +349,7 @@ namespace Mio {
         struct Data {
             std::string name;
             std::shared_ptr<int> v = std::make_shared<int>();
+            bool autoSize = false;
             int v_button = 0;
         };
 
@@ -658,6 +660,7 @@ namespace Mio {
     class Console : public UIBase {
     public:
         friend class YAML::convert<std::shared_ptr<UIBase>>;
+
         struct LogData {
             enum Level {
                 LogDebug,

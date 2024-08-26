@@ -14,6 +14,7 @@
 [submodule "Library/yaml-cpp"]
 	path = Library/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+
 [submodule "Library/RyoCompression"]
 	path = Library/RyoCompression
 	url = https://github.com/NGLSG/RyoComression.git
