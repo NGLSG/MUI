@@ -21,6 +21,7 @@ namespace Mio {
         std::map<std::string, float> LogFloat = {};
         std::map<std::string, ImVec2> LogVec2 = {};
         std::map<std::string, ImVec4[ImGuiCol_COUNT]> LogVec4 = {};
+        std::map<int, ImVec4> LogColor = {};
         std::map<std::string, ImGuiDir> LogDir = {};
         std::map<std::string, ImGuiHoveredFlags> LogHoveredFlags = {};
         std::map<std::string, bool> LogBool = {};
@@ -113,6 +114,10 @@ namespace Mio {
                 }
             }
 
+            for (const auto&[key, value]: data.LogColor) {
+                cStyle.Colors[key] = value;
+            }
+
             for (const auto&[key, value]: data.LogDir) {
                 auto it = std::find_if(ChangeLogs::AllVariables.begin(), ChangeLogs::AllVariables.end(),
                                        [&key](const std::pair<std::string, std::string>&p) {
@@ -201,7 +206,8 @@ namespace Mio {
                         ImVec4 lhsValue = cStyle.Colors[i];
                         ImVec4 rhsValue = rhs.Colors[i];
                         if (lhsValue != rhsValue) {
-                            ChangeLog.LogVec4["Colors"][i] = lhsValue;
+                            //ChangeLog.LogVec4["Colors"][i] = lhsValue;
+                            ChangeLog.LogColor[i] = lhsValue;
                             changed = true;
                         }
                     }

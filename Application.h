@@ -161,7 +161,7 @@ namespace Mio {
 
         struct Data {
             std::string name;
-            bool autoSize = true;
+            bool autoSize = false;
         };
 
         static std::shared_ptr<Button> Create(const Data&data) {

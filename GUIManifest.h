@@ -434,7 +434,7 @@ namespace YAML {
                 node[key] = YAML::Load("[" + std::to_string(value.x) + ", " + std::to_string(value.y) + "]");
             }
 
-            for (const auto&[key, value]: rhs.LogVec4) {
+            /*for (const auto&[key, value]: rhs.LogVec4) {
                 Node colors;
                 for (int i = 0; i < ImGuiCol_COUNT; ++i) {
                     colors.push_back(YAML::Load(
@@ -442,6 +442,11 @@ namespace YAML {
                         std::to_string(value[i].z) + ", " + std::to_string(value[i].w) + "]"));
                 }
                 node[key] = colors;
+            }*/
+            for (const auto&[key, value]: rhs.LogColor) {
+                node["Colors"][key] = YAML::Load(
+                    "[" + std::to_string(value.x) + ", " + std::to_string(value.y) + ", " +
+                    std::to_string(value.z) + ", " + std::to_string(value.w) + "]");
             }
 
             for (const auto&[key, value]: rhs.LogDir) {
@@ -492,13 +497,20 @@ namespace YAML {
                                 if (valueNode.size() == 2) {
                                     rhs.LogVec2[key] = ImVec2(valueNode[0].as<float>(), valueNode[1].as<float>());
                                 }
-                                else if (key == "Colors") {
+                                /*else if (key == "Colors") {
                                     for (int i = 0; i < ImGuiCol_COUNT; ++i) {
                                         rhs.LogVec4[key][i] = ImVec4(valueNode[i][0].as<float>(),
                                                                      valueNode[i][1].as<float>(),
                                                                      valueNode[i][2].as<float>(),
                                                                      valueNode[i][3].as<float>());
                                     }
+                                }*/
+                            }
+                            else if (key == "Colors") {
+                                for (auto&it: valueNode) {
+                                    rhs.LogColor[it.first.as<int>()] = ImVec4(
+                                        it.second[0].as<float>(), it.second[1].as<float>(),
+                                        it.second[2].as<float>(), it.second[3].as<float>());
                                 }
                             }
                         }
