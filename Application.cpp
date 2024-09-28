@@ -827,6 +827,7 @@ namespace Mio {
         style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f); // Input box hover
         style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.47f, 1.00f, 1.00f); // Checkbox checkmark
         style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.1f, 0.1f, 0.1f, 1.00f);
+        style.Colors[ImGuiCol_PopupBg]=ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
         style.ChildBorderSize = 0.0f;
         style.FrameBorderSize = 0.0f;
         style.FrameBorderSize = 1.0f; // Border size
