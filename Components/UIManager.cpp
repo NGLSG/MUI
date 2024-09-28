@@ -1,5 +1,7 @@
 #include "UIManager.h"
 
+#include "Utils.h"
+
 namespace Mio {
     std::shared_ptr<UIBase> UIManager::GetUIElement(UUid uuid) {
         auto it = std::find_if(uiElements.begin(), uiElements.end(),
@@ -27,13 +29,13 @@ namespace Mio {
     }
 
     void UIManager::RemoveUIElement(UUid uuid) {
-        std::erase_if(uiElements, [&](const std::shared_ptr<UIBase>&item) {
+        Mio::erase_if(uiElements, [&](const std::shared_ptr<UIBase>&item) {
             return item->UID() == uuid;
         });
     }
 
     void UIManager::RemoveUIElement(const std::string&name) {
-        std::erase_if(uiElements, [&](const std::shared_ptr<UIBase>&item) {
+        Mio::erase_if(uiElements, [&](const std::shared_ptr<UIBase>&item) {
             return item->cName == name;
         });
     }

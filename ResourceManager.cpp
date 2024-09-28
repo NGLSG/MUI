@@ -1,4 +1,7 @@
 #include "ResourceManager.h"
+
+#include <Utils.h>
+
 #include "Encryption.h"
 #include "Library/RyoCompression/Utils.h"
 #include "GUIManifest.h"
@@ -6,14 +9,14 @@
 namespace Mio {
     void ResourcePackage::AddFiles(std::vector<std::string> files) {
         for (auto&file: files) {
-            if (std::ranges::find(files, file) == files.end()) {
+            if (std::find(files.begin(), files.end(), file) == files.end()) {
                 this->files.emplace_back(file);
             }
         }
     }
 
     std::string ResourcePackage::AddFile(std::string file) {
-        if (std::ranges::find(files, file) == files.end()) {
+        if (std::find(files.begin(), files.end(), file) == files.end()) {
             this->files.emplace_back((ResourcePath / file).string());
             if (RC::Utils::File::Exists(file))
                 RC::Utils::Directory::Copy(file, (ResourcePath / file).string());

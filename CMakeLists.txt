@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 set(name MUI)
-
+set(CMAKE_CXX_STANDARD 17)
 file(GLOB src
         *.cpp
         Utils/*.cpp
@@ -18,7 +18,11 @@ include_directories(Utils Components)
 add_definitions(-DNOCRYPT)
 add_library(MUI SHARED STATIC ${src} ${header})
 target_link_libraries(MUI PUBLIC RyoCompress ImNodeEditor ImGui glfw EnTT::EnTT yaml-cpp::yaml-cpp)
-
+if (WIN32)
+    target_compile_definitions(MUI PRIVATE -DWIN32_LEAN_AND_MEAN)
+    target_compile_definitions(MUI PRIVATE -DWINDOWS)
+    set_target_properties(MUI PROPERTIES WIN32_EXECUTABLE TRUE)
+endif ()
 add_library(Mio::UI ALIAS MUI)
 
 

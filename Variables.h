@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include "Utils.h"
+
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
 #endif

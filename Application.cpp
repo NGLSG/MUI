@@ -695,7 +695,7 @@ namespace Mio {
     }
 
     void MenuBar::RemoveMenuItem(UUid uuid) {
-        std::erase_if(menuItems, [&](const std::shared_ptr<MenuItem>&item) {
+        Mio::erase_if(menuItems, [&](const std::shared_ptr<MenuItem>&item) {
             return item->UID() == uuid;
         });
     }
@@ -784,7 +784,7 @@ namespace Mio {
     }
 
     void Application::RemoveManifest(UUid uuid) {
-        std::erase_if(manifests, [&](const std::shared_ptr<GUIManifest>&item) {
+        Mio::erase_if(manifests, [&](const std::shared_ptr<GUIManifest>&item) {
             return item->sUUID == uuid;
         });
     }

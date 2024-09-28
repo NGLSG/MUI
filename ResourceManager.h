@@ -10,6 +10,8 @@
 #include "Compression.h"
 #include <yaml-cpp/yaml.h>
 
+#include "Utils/Utils.h"
+
 inline static const std::string ResourcePackageExtension = ".pck";
 inline static const std::filesystem::path ResourcePath("Resources");
 inline static const std::filesystem::path PackedPath("build");
@@ -70,20 +72,21 @@ namespace Mio {
 
         template<typename T>
         static std::shared_ptr<T> GetUI(const std::shared_ptr<GUIManifest>&manifest, const std::string&name) {
-            if (UIResources.contains(manifest))
+            if (contains(UIResources, manifest))
                 return std::dynamic_pointer_cast<T>(UIResources[manifest][name]);
             return nullptr;
         }
 
         static void RemoveUI(const std::shared_ptr<GUIManifest>&manifest, const std::string&name) {
-            if (UIResources.contains(manifest))
+            if (contains(UIResources, manifest))
                 UIResources[manifest].erase(name);
         }
 
         template<typename T>
         static std::shared_ptr<T> GetUI(const std::shared_ptr<GUIManifest>&manifest, const UUid&uid) {
-            if (UIResources.contains(manifest)) {
-                for (auto&ui: UIResources[manifest] | std::views::values) {
+            if (contains(UIResources, manifest)) {
+                for (auto&pair: UIResources[manifest]) {
+                    auto&ui = pair.second;
                     if (ui->UID() == uid)
                         return std::dynamic_pointer_cast<T>(ui);
                 }
@@ -92,11 +95,15 @@ namespace Mio {
         }
 
         static void RemoveUI(const std::shared_ptr<GUIManifest>&manifest, const UUid&uid) {
-            if (UIResources.contains(manifest)) {
-                for (auto&ui: UIResources[manifest] | std::views::values) {
+            if (contains(UIResources, manifest)) {
+                for (auto it = UIResources[manifest].begin(); it != UIResources[manifest].end();) {
+                    auto&ui = it->second;
                     if (ui->UID() == uid) {
-                        UIResources[manifest].erase(ui->cName);
+                        it = UIResources[manifest].erase(it);
                         return;
+                    }
+                    else {
+                        ++it;
                     }
                 }
             }

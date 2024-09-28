@@ -17,6 +17,14 @@ namespace Mio {
                std::abs(lhs.z - rhs.z) < EPSILON && std::abs(lhs.w - rhs.w) < EPSILON;
     }
 
+    inline bool operator!=(const ImVec2&lhs, const ImVec2&rhs) {
+        return !(lhs == rhs);
+    }
+
+    inline bool operator!=(const ImVec4&lhs, const ImVec4&rhs) {
+        return !(lhs == rhs);
+    }
+
     struct ChangeLogs {
         std::map<std::string, float> LogFloat = {};
         std::map<std::string, ImVec2> LogVec2 = {};

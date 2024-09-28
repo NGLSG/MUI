@@ -1,6 +1,10 @@
 #ifndef UI_H
 #define UI_H
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN 1
+#endif
+
 #include <array>
 #include <chrono>
 #include <functional>

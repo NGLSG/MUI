@@ -12,14 +12,14 @@ namespace Mio {
     }
 
     void Variables::Declare(const std::string&name) {
-        if (!variables.contains(name))
+        if (!contains(variables, name))
             variables[name] = nullptr;
     }
 
     void Variables::Unregister(std::shared_ptr<void> variable) {
-        erase_if(variables, ([&variable](const auto&pair) {
+        Mio::erase_if(variables, [&variable](const auto&pair) {
             return pair.second == variable;
-        }));
+        });
     }
 
     void Variables::Unregister(const std::string&name) {

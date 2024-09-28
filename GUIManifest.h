@@ -53,7 +53,7 @@ namespace Mio {
         }
 
         void TryAddManager(const std::shared_ptr<UIManager>&manager) {
-            if (std::ranges::find(sManager, manager) == sManager.end()) {
+            if (std::find(sManager.begin(), sManager.end(), manager) == sManager.end()) {
                 sManager.push_back(manager);
             }
         }
