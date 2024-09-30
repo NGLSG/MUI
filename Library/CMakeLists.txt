@@ -53,12 +53,3 @@ file(GLOB edSrc
 add_library(ImNodeEditor STATIC ${edSrc})
 target_link_libraries(ImNodeEditor PUBLIC ImGui)
 target_include_directories(ImNodeEditor PUBLIC imgui-node-editor)
-
-file(GLOB gSrc
-        glad/include/glad/glad.h
-        glad/include/KHR/khrplatform.h
-        glad/src/glad.c
-)
-
-add_library(Glad STATIC ${gSrc})
-target_include_directories(Glad PUBLIC glad/include)

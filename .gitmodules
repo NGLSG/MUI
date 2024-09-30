@@ -2,9 +2,6 @@
 	path = Library/ImGUI
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
-[submodule "Library/glfw"]
-	path = Library/glfw
-	url = https://github.com/glfw/glfw.git
 [submodule "Library/entt"]
 	path = Library/entt
 	url = https://github.com/skypjack/entt.git

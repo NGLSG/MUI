@@ -848,6 +848,7 @@ namespace Mio {
         style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.73f, 0.73f, 0.73f, 1.00f); // Pressed effect
         style.Colors[ImGuiCol_TitleBg] = ImVec4(0.2f, 0.3f, 0.4f, 1.0f); // Inactive window title background color
         style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.25f, 0.35f, 0.45f, 1.0f);
+
         // Active window title background color
         style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.3f, 0.4f, 0.5f, 1.0f);
         // Collapsed window title background color
@@ -855,7 +856,8 @@ namespace Mio {
         style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f); // Pressed slider handle
         style.Colors[ImGuiCol_FrameBg] = ImVec4(0.85f, 0.85f, 0.85f, 1.00f); // Input box background
         style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f); // Input box hover
-        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.47f, 1.00f, 1.00f); // Checkbox checkmark
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.8f, 0.8f, .8f, 1.00f); // Checkbox checkmark
+        style.Colors[ImGuiCol_TabActive] = ImVec4(0.8f, 0.8f, .8f, 1.00f);
         style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.1f, 0.1f, 0.1f, 1.00f);
         style.Colors[ImGuiCol_PopupBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
         style.ChildBorderSize = 0.0f;
