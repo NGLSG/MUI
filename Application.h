@@ -24,6 +24,7 @@
 
 #include "Window.h"
 //#include "backends/imgui_impl_glfw.h"
+#include "GUIManifest.h"
 #include "backends/imgui_impl_opengl3_loader.h"
 #include "Components/Component.h"
 #include "Components/Style.h"
@@ -908,6 +909,19 @@ namespace Mio {
 
         void RemoveManifest(UUid uuid);
 
+        void SetCurrentManifest(std::shared_ptr<GUIManifest>&New) {
+            CurrentManifest = New;
+        }
+
+        void SetCurrentManifest(UUid uuid) {
+            for (auto&manifest: manifests) {
+                if (manifest->sUUID == uuid) {
+                    CurrentManifest = manifest;
+                    return;
+                }
+            }
+        }
+
         std::string AddFont(const std::string&fontPath, float = 18.f);
 
         void RemoveFont(const std::string&fontPath);
@@ -957,6 +971,7 @@ namespace Mio {
         std::string icon;
         //GLFWwindow* window{};
         std::shared_ptr<PlatformWindow> platformWindow;
+        std::shared_ptr<GUIManifest> CurrentManifest;
         bool* show_demo_window = new bool(true);
         bool show_another_window = false;
         ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);

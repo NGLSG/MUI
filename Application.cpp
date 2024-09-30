@@ -766,10 +766,8 @@ namespace Mio {
         ImGuiIO&io = ImGui::GetIO();
         //Renderer
         {
-            for (auto&item: manifests) {
-                for (auto&ui: item->sManager) {
-                    ui->Update();
-                }
+            for (auto&ui: CurrentManifest->sManager) {
+                ui->Update();
             }
         }
 
@@ -811,12 +809,14 @@ namespace Mio {
 
     void Application::AddManifest(std::shared_ptr<GUIManifest>&manifest) {
         manifests.emplace_back(manifest);
+        SetCurrentManifest(manifest);
     }
 
     void Application::RemoveManifest(UUid uuid) {
         Mio::erase_if(manifests, [&](const std::shared_ptr<GUIManifest>&item) {
             return item->sUUID == uuid;
         });
+        SetCurrentManifest(manifests.back());
     }
 
     std::string Application::AddFont(const std::string&fontPath, float size) {
