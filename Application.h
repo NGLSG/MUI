@@ -3,6 +3,7 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN 1
+#include <Windows.h>
 #endif
 
 #include <array>
@@ -15,11 +16,15 @@
 #include <utility>
 
 #include "stb_image.h"
-#include "GLFW/glfw3.h"
+//#include "GLFW/glfw3.h"
 #include <imgui_node_editor.h>
 #include <yaml-cpp/node/convert.h>
 
-#include "backends/imgui_impl_glfw.h"
+#include <SDL3/SDL.h>
+
+#include "Window.h"
+//#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3_loader.h"
 #include "Components/Component.h"
 #include "Components/Style.h"
 #include "Components/Transform.h"
@@ -887,9 +892,15 @@ namespace Mio {
         Application(std::string name, std::string iconPath): name(std::move(name)), icon(std::move(iconPath)) {
         }
 
+        void FreeWindowsConsole() {
+#ifdef _WIN32
+            FreeConsole();
+#endif
+        }
+
         void Initialize();
 
-        void Update();
+        void Update() const;
 
         void Shutdown() const;
 
@@ -904,23 +915,26 @@ namespace Mio {
         void SetFont(const std::string&fontPath);
 
         void SetClearColor(const ImVec4&color) {
-            ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = color;
+            //ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = color;
+            clear_color = color;
         }
 
         bool ShouldClose() const {
-            return glfwWindowShouldClose(window);
+            //return glfwWindowShouldClose(window);
+            return platformWindow->ShouldClose();
         }
 
-        GLFWwindow* GetWindow() {
-            return window;
+        std::shared_ptr<PlatformWindow> GetWindow() {
+            return platformWindow;
         }
+
 
         ~Application() = default;
 
     private:
         static void SetStyleDefault();
 
-        static void glfw_error_callback(int error, const char* description) {
+        /*static void glfw_error_callback(int error, const char* description) {
             fprintf(stderr, "Glfw Error %d: %s\n", error, description);
         }
 
@@ -937,17 +951,24 @@ namespace Mio {
 
         static void glfw_window_size_callback(GLFWwindow* window, int width, int height) {
             glfwSetWindowSize(window, width, height);
-        }
+        }*/
 
         std::string name;
         std::string icon;
-        GLFWwindow* window{};
-        bool show_demo_window = true;
+        //GLFWwindow* window{};
+        std::shared_ptr<PlatformWindow> platformWindow;
+        bool* show_demo_window = new bool(true);
         bool show_another_window = false;
         ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
         std::vector<std::shared_ptr<GUIManifest>> manifests;
         std::map<std::string, ImFont *> Fonts;
     };
+
+#ifdef _WIN32
+#define MAIN_FUNCTION APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+#else
+    #define MAIN_FUNCTION main(int argc, char** argv)
+#endif
 }
 
 

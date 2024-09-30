@@ -18,3 +18,6 @@
 [submodule "Library/RyoCompression"]
 	path = Library/RyoCompression
 	url = https://github.com/NGLSG/RyoComression.git
+[submodule "Library/SDL"]
+	path = Library/SDL
+	url = https://github.com/libsdl-org/SDL.git

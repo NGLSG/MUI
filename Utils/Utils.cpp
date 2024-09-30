@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "stb_image.h"
-#include "backends/imgui_impl_opengl3_loader.h"
+#include <SDL3/SDL_opengl.h>
 
 namespace Mio {
     GLuint Utils::LoadTexture(const char* filename) {

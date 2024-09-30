@@ -1,15 +1,15 @@
+#include "glad/glad.h"
 #include "Application.h"
-
 #include <filesystem>
 #include <utility>
-
-#include <backends/imgui_impl_opengl3.h>
-#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_sdlrenderer3.h>
+#include <backends/imgui_impl_sdl3.h>
 
 #include "GUIManifest.h"
 #include "Components/Event.h"
 #include "Utils.h"
 #include "Variables.h"
+
 
 namespace Mio {
     NodeEditor::NodeEditor(Data data): cData(std::move(data)) {
@@ -94,7 +94,6 @@ namespace Mio {
 
     void Button::Update() {
         if (Active) {
-
             UIBase::BeginFrame();
             if (cData.autoSize) {
                 ImGui::GetFont()->FontSize = transform.cSize.x / static_cast<float>(converter.from_bytes(cData.name).
@@ -244,7 +243,6 @@ namespace Mio {
 
     void RadioButton::Update() {
         if (Active) {
-
             UIBase::BeginFrame();
             if (cData.autoSize) {
                 ImGui::GetFont()->FontSize = transform.cSize.x / static_cast<float>(converter.from_bytes(cData.name).
@@ -368,8 +366,6 @@ namespace Mio {
             UIBase::BeginFrame();
             if (ImGui::ColorPicker4(cData.name.c_str(), reinterpret_cast<float *>(cData.v.get()), cData.flags,
                                     reinterpret_cast<float *>(&cData.ref_col))) {
-                std::cout << "R:" << cData.v->x << " G:" << cData.v->y << " B:" << cData.v->z << " A:" << cData.v->w <<
-                        std::endl;
             }
             UIBase::EndFrame();
         }
@@ -701,16 +697,20 @@ namespace Mio {
     }
 
     void Application::Initialize() {
-        if (!glfwInit()) {
+        /*if (!glfwInit()) {
             throw std::runtime_error("Failed to initialize GLFW");
         }
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-        window = glfwCreateWindow(900, 900 / 1.2, name.c_str(), nullptr, nullptr);
-        if (std::filesystem::exists(icon)) {
+        glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);*/
+
+        //window = glfwCreateWindow(900, 900 / 1.2, name.c_str(), nullptr, nullptr);
+        platformWindow = PlatformWindow::Create(name.c_str(), 900, 900 / 1.2,
+                                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN);
+
+        /*if (std::filesystem::exists(icon)) {
             GLFWimage image;
             image.pixels = static_cast<unsigned char *>(Utils::LoadTextureToRAM(icon.c_str()));
             glfwSetWindowIcon(window, 1, &image);
@@ -720,37 +720,52 @@ namespace Mio {
             glfwTerminate();
             throw std::runtime_error("Failed to create GLFW window");
         }
-        glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(window);*/
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGui::StyleColorsDark();
         ImGuiIO&io = ImGui::GetIO();
-        SetFont(AddFont((ResourcePath / "assets/font/SourceBlack.otf").string(), 16));
+        (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
 
+        ImGui::StyleColorsLight();
+
+
+        //ImGui_ImplGlfw_InitForOpenGL(window, true);
         SetStyleDefault();
 
-        ImGui_ImplGlfw_InitForOpenGL(window, true);
-        ImGui_ImplOpenGL3_Init("#version 410");
+        //ImGui_ImplOpenGL3_Init(platformWindow->GetGLSLVersion());
+        if (!ImGui_ImplSDL3_InitForSDLRenderer(platformWindow->pWindow, platformWindow->pRenderer)) {
+            throw std::runtime_error("Failed to initialize ImGui_ImplSDL3_InitForSDLRenderer");
+        }
+        if (!ImGui_ImplSDLRenderer3_Init(platformWindow->pRenderer)) {
+            throw std::runtime_error("Failed to initialize ImGui_ImplSDLRenderer3_Init");
+        }
 
-        glfwSetErrorCallback(glfw_error_callback);
+        SetFont(AddFont((ResourcePath / "assets/font/SourceBlack.otf").string(), 16));
+        platformWindow->SetIcon(icon.c_str());
+        /*glfwSetErrorCallback(glfw_error_callback);
         glfwSetWindowSizeCallback(window, glfw_window_size_callback);
         glfwSetKeyCallback(window, glfw_key_callback);
-        glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);
+        glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);*/
     }
 
-    void Application::Update() {
-        glfwPollEvents();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    void Application::Update() const {
+        //glfwPollEvents();
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        platformWindow->Update();
+
+        //ImGui_ImplOpenGL3_NewFrame();
+        //ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplSDLRenderer3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
+
         ImGui::DockSpaceOverViewport();
-        ImGuiIO&io = ImGui::GetIO(); {
+        ImGuiIO&io = ImGui::GetIO();
+        //Renderer
+        {
             for (auto&item: manifests) {
                 for (auto&ui: item->sManager) {
                     ui->Update();
@@ -759,24 +774,39 @@ namespace Mio {
         }
 
         ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        ImGui::EndFrame();
+        /*glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);*/
+        //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        SDL_SetRenderDrawColorFloat(platformWindow->pRenderer, clear_color.x, clear_color.y, clear_color.z,
+                                    clear_color.w);
+        SDL_RenderClear(platformWindow->pRenderer);
+        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), platformWindow->pRenderer);
+        SDL_RenderPresent(platformWindow->pRenderer);
 
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        /*if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            //GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            /*SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();#1#
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
-        glfwSwapBuffers(window);
+            //platformWindow->MakeCurrent(backup_current_window, backup_current_context);
+            //glfwMakeContextCurrent(backup_current_context);
+        }*/
+        //glfwSwapBuffers(window);
+
+        //platformWindow->Swap();
     }
 
     void Application::Shutdown() const {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
+        //ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplSDLRenderer3_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
+        //ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        glfwDestroyWindow(window);
-        glfwTerminate();
+        platformWindow->Close();
+        /*glfwDestroyWindow(window);
+        glfwTerminate();*/
     }
 
     void Application::AddManifest(std::shared_ptr<GUIManifest>&manifest) {
@@ -827,7 +857,7 @@ namespace Mio {
         style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f); // Input box hover
         style.Colors[ImGuiCol_CheckMark] = ImVec4(0.00f, 0.47f, 1.00f, 1.00f); // Checkbox checkmark
         style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.1f, 0.1f, 0.1f, 1.00f);
-        style.Colors[ImGuiCol_PopupBg]=ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
+        style.Colors[ImGuiCol_PopupBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
         style.ChildBorderSize = 0.0f;
         style.FrameBorderSize = 0.0f;
         style.FrameBorderSize = 1.0f; // Border size
