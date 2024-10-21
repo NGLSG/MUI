@@ -52,6 +52,14 @@ namespace Mio {
             Active = active;
         }
 
+        ImGuiStyle GetStyle() const {
+            return style.GetStyle();
+        }
+
+        void SetStyle(ImGuiStyle istyle) {
+            style.Modify(istyle);
+        }
+
         bool ActiveSelf() const {
             return Active;
         }

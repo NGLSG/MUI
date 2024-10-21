@@ -6,7 +6,7 @@
 
 #include "ResourceManager.h"
 #include "Components/Event.h"
-#include "Application.h"
+#include "UIElements.h"
 
 namespace Mio {
     struct Manifests;
@@ -622,7 +622,7 @@ namespace YAML {
             node["imagePath"] = rhs.imagePath;
             node["uv0"] = rhs.uv0;
             node["uv1"] = rhs.uv1;
-            node["frame_padding"] = rhs.frame_padding;
+            node["size"] = rhs.size;
             node["bg_col"] = rhs.bg_col;
             node["tint_col"] = rhs.tint_col;
             return node;
@@ -635,7 +635,8 @@ namespace YAML {
             rhs.imagePath = node["imagePath"].as<std::string>();
             rhs.uv0 = node["uv0"].as<ImVec2>();
             rhs.uv1 = node["uv1"].as<ImVec2>();
-            rhs.frame_padding = node["frame_padding"].as<int>();
+            if (node["size"].IsDefined())
+                rhs.size = node["size"].as<ImVec2>();
             rhs.bg_col = node["bg_col"].as<ImVec4>();
             rhs.tint_col = node["tint_col"].as<ImVec4>();
             return true;
