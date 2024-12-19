@@ -68,20 +68,28 @@ namespace Mio {
         while (SDL_PollEvent(&cEvent)) {
             ImGui_ImplSDL3_ProcessEvent(&cEvent);
             if (cEvent.type == SDL_EVENT_QUIT) {
+#ifdef _DEBUG
                 std::cout << "SDL_EVENT_WINDOW_CLOSE_REQUESTED received." << std::endl;
+#endif
                 Running = false;
             }
             if (cEvent.type == SDL_EVENT_KEY_DOWN) {
                 if (cEvent.key.key == SDLK_ESCAPE) {
                 }
+#ifdef _DEBUG
                 std::cout << "Key down: " << cEvent.key.key << std::endl;
+#endif
             }
             if (cEvent.type == SDL_EVENT_KEY_UP) {
+#ifdef _DEBUG
                 std::cout << "Key up: " << cEvent.key.key << std::endl;
+#endif
             }
 
             if (cEvent.type == SDL_EVENT_WINDOW_RESIZED) {
+#ifdef _DEBUG
                 std::cout << "Window resized: " << cEvent.window.data1 << "x" << cEvent.window.data2 << std::endl;
+#endif
                 SDL_SetWindowSize(pWindow, cEvent.window.data1, cEvent.window.data2);
             }
         }

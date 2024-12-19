@@ -1,5 +1,6 @@
 #ifndef GUIMANIFEST_H
 #define GUIMANIFEST_H
+#include <iostream>
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
@@ -9,8 +10,6 @@
 #include "UIElements.h"
 
 namespace Mio {
-    struct Manifests;
-
     class GUIManifest : public std::enable_shared_from_this<GUIManifest> {
     public:
         std::string sName;
@@ -20,55 +19,39 @@ namespace Mio {
         std::string SavePath;
 
         template<typename T>
-        std::shared_ptr<T> GetUI(const std::string&name) {
-            return ResourceManager::GetUI<T>(shared_from_this(), name);
-        }
+        std::shared_ptr<T> GetUI(const std::string&name);
 
         template<typename T>
-        std::shared_ptr<T> GetUI(const UUid&uid) {
-            return ResourceManager::GetUI<T>(shared_from_this(), uid);
-        }
+        std::shared_ptr<T> GetUI(const UUid&uid);
 
-        void RemoveUI(const std::string&name) {
-            ResourceManager::RemoveUI(shared_from_this(), name);
-            for (auto&it: sManager) {
-                it->RemoveUIElement(name);
-            }
-        }
+        void Save();
 
-        void RemoveUI(const UUid&uid) {
-            ResourceManager::RemoveUI(shared_from_this(), uid);
-            for (auto&it: sManager) {
-                it->RemoveUIElement(uid);
-            }
-        }
+        void RemoveUI(const std::string&name);
 
-        void TryRemoveManager(const std::string&name) {
-            for (auto it = sManager.begin(); it != sManager.end(); ++it) {
-                if ((*it)->cName == name) {
-                    sManager.erase(it);
-                    return;
-                }
-            }
-        }
+        void RemoveUI(const UUid&uid);
 
-        void TryAddManager(const std::shared_ptr<UIManager>&manager) {
-            if (std::find(sManager.begin(), sManager.end(), manager) == sManager.end()) {
-                sManager.push_back(manager);
-            }
-        }
+        void TryRemoveManager(const std::string&name);
 
-        GUIManifest() = default;
+        void TryAddManager(const std::shared_ptr<UIManager>&manager);
 
-        GUIManifest(const std::string&name, const std::string&dir) {
-            sName = name;
-            SavePath = dir + "/" + sName;
-        }
+        GUIManifest();
 
-        static std::shared_ptr<GUIManifest> Create(const std::string&name, const std::string&dir) {
+        GUIManifest(const std::string&name, const std::string&dir);
+
+        inline static std::shared_ptr<GUIManifest> Create(const std::string&name, const std::string&dir) {
             return std::make_shared<GUIManifest>(name, dir);
         }
     };
+
+    template<typename T>
+    std::shared_ptr<T> GUIManifest::GetUI(const std::string&name) {
+        return ResourceManager::GetUI<T>(shared_from_this(), name);
+    }
+
+    template<typename T>
+    std::shared_ptr<T> GUIManifest::GetUI(const UUid&uid) {
+        return ResourceManager::GetUI<T>(shared_from_this(), uid);
+    }
 } // Mio
 
 namespace YAML {
@@ -692,7 +675,6 @@ namespace YAML {
         static Node encode(const Mio::InputText::Data&rhs) {
             Node node;
             node["label"] = rhs.label;
-            node["buf"] = rhs.buf;
             node["buf_size"] = rhs.buf_size;
             node["hint"] = rhs.hint;
             node["Multiline"] = rhs.Multiline;
@@ -705,9 +687,6 @@ namespace YAML {
                 return false;
             }
             rhs.label = node["label"].as<std::string>().c_str();
-            std::string buf = node["buf"].as<std::string>();
-            rhs.buf = new char[buf.size() + 1];
-            strcpy(rhs.buf, buf.c_str());
             rhs.buf_size = node["buf_size"].as<size_t>();
             rhs.hint = node["hint"].as<std::string>().c_str();
             rhs.Multiline = node["Multiline"].as<bool>();
@@ -1474,52 +1453,59 @@ namespace YAML {
             const auto type = node["type"].as<Mio::UIBase::Type>();
 
             switch (type) {
-                case Mio::UIBase::Type::Tooltip:
-                    rhs = std::dynamic_pointer_cast<Mio::Tooltip>(
-                        Mio::Tooltip::Create(node["data"].as<Mio::Tooltip::Data>(), rhs->cName));
+                case Mio::UIBase::Type::SubWindow:
+                    rhs = Mio::SubWindow::Create(node["data"].as<Mio::SubWindow::Data>(), rhs->cName);
                     for (const auto&element: node["uiElements"]) {
                         std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
-                        rhs->uiElements.push_back(uiElement);
+                        std::dynamic_pointer_cast<Mio::SubWindow>(rhs)->uiElements.push_back(uiElement);
                     }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
+                case Mio::UIBase::Type::Tooltip:
+                    rhs = Mio::Tooltip::Create(node["data"].as<Mio::Tooltip::Data>(), rhs->cName);
+                    for (const auto&element: node["uiElements"]) {
+                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
+                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
+                            return false;
+                        }
+                        std::dynamic_pointer_cast<Mio::Tooltip>(rhs)->uiElements.push_back(uiElement);
+                    }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
                     break;
                 case Mio::UIBase::Type::TreeNode:
-                    rhs = std::dynamic_pointer_cast<Mio::TreeNode>(
-                        Mio::TreeNode::Create(node["data"].as<Mio::TreeNode::Data>(), rhs->cName));
+                    rhs = Mio::TreeNode::Create(node["data"].as<Mio::TreeNode::Data>(), rhs->cName);
                     for (const auto&element: node["uiElements"]) {
                         std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
-                        rhs->uiElements.push_back(uiElement);
+                        std::dynamic_pointer_cast<Mio::TreeNode>(rhs)->uiElements.push_back(uiElement);
                     }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
                     break;
                 case Mio::UIBase::Type::Window:
-                    rhs = std::dynamic_pointer_cast<Mio::Window>(
-                        Mio::Window::Create(node["data"].as<Mio::Window::Data>(), rhs->cName));
+                    rhs = Mio::Window::Create(node["data"].as<Mio::Window::Data>(), rhs->cName);
                     for (const auto&element: node["uiElements"]) {
                         std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
-                        rhs->uiElements.push_back(uiElement);
+                        std::dynamic_pointer_cast<Mio::Window>(rhs)->uiElements.push_back(uiElement);
                     }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
                     break;
-                case Mio::UIBase::Type::SubWindow:
-                    rhs = std::dynamic_pointer_cast<Mio::SubWindow>(
-                        Mio::SubWindow::Create(node["data"].as<Mio::SubWindow::Data>(), rhs->cName));
-                    for (const auto&element: node["uiElements"]) {
-                        std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
-                        if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
-                            return false;
-                        }
-                        rhs->uiElements.push_back(uiElement);
-                    }
-                    break;
-                case Mio::UIBase::Type::MenuBar: rhs = Mio::MenuBar::Create(
-                                                     node["data"].as<Mio::MenuBar::Data>(), rhs->cName);
+                case Mio::UIBase::Type::MenuBar:
+                    rhs = Mio::MenuBar::Create(node["data"].as<Mio::MenuBar::Data>(), rhs->cName);
                     for (const auto&element: node["menuItems"]) {
                         std::shared_ptr<Mio::UIBase> uiElement = std::make_shared<Mio::UIBase>();
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
@@ -1528,6 +1514,9 @@ namespace YAML {
                         std::dynamic_pointer_cast<Mio::MenuBar>(rhs)->menuItems.push_back(
                             std::dynamic_pointer_cast<Mio::MenuItem>(uiElement));
                     }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
                     break;
                 case Mio::UIBase::Type::Group:
                     rhs = Mio::Group::Create(node["data"].as<Mio::Group::Data>());
@@ -1536,8 +1525,11 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
-                        rhs->uiElements.push_back(uiElement);
+                        std::dynamic_pointer_cast<Mio::Group>(rhs)->uiElements.push_back(uiElement);
                     }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
                     break;
                 case Mio::UIBase::Type::Popup:
                     rhs = Mio::Popup::Create(node["data"].as<Mio::Popup::Data>());
@@ -1546,8 +1538,11 @@ namespace YAML {
                         if (!convert<std::shared_ptr<Mio::UIBase>>::decode(element, uiElement)) {
                             return false;
                         }
-                        rhs->uiElements.push_back(uiElement);
+                        std::dynamic_pointer_cast<Mio::Popup>(rhs)->uiElements.push_back(uiElement);
                     }
+                    if (node["UIRender"])
+                        rhs->GetComponent<Mio::Event>().SetFuncs(node["UIRender"].as<std::vector<std::string>>());
+
                     break;
                 default:
                     return false;
