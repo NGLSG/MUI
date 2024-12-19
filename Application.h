@@ -19,18 +19,18 @@
 
 #include "Window.h"
 #include "UIElements.h"
+#include "GUIManifest.h"
+#include "ResourceManager.h"
 
 
 namespace Mio {
-    class GUIManifest;
-
-
     class Application {
     public:
         Application() {
         }
 
-        Application(std::string name, std::string iconPath): name(std::move(name)), icon(std::move(iconPath)) {
+        Application(std::string name, std::string iconPath) : name(std::move(name)),
+                                                              icon(std::move(iconPath)) {
         }
 
         void FreeWindowsConsole() {
@@ -113,7 +113,7 @@ namespace Mio {
 #ifdef _WIN32
 #define MAIN_FUNCTION APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #else
-    #define MAIN_FUNCTION main(int argc, char** argv)
+#define MAIN_FUNCTION main(int argc, char** argv)
 #endif
 }
 

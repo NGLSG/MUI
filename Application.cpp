@@ -5,6 +5,7 @@
 #include <backends/imgui_impl_sdl3.h>
 
 #include "GUIManifest.h"
+#include "ResourceManager.h"
 #include "Components/Event.h"
 #include "Utils.h"
 #include "Variables.h"
